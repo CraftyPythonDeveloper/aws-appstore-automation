@@ -10,9 +10,9 @@ from datetime import datetime, timedelta
 from exceptions import LoginError
 
 STATIC_DATA = {
-                "dashboard_url": "https://developer.amazon.com/dashboard",
-                "create_new_app_url": "https://developer.amazon.com/apps-and-games/console/app/new.html",
-                "scroll_top_query": "document.documentElement.scrollTop = 0;",
+    "dashboard_url": "https://developer.amazon.com/dashboard",
+    "create_new_app_url": "https://developer.amazon.com/apps-and-games/console/app/new.html",
+    "scroll_top_query": "document.documentElement.scrollTop = 0;",
 
 }
 prompt = """You are an android app description suggestion agent and your job is to generate short description, 
@@ -24,7 +24,7 @@ prompt = """You are an android app description suggestion agent and your job is 
             {response_format}
             """
 
-response_format = '{"short_description": "this is short description", "long_description": "this is long description", '\
+response_format = '{"short_description": "this is short description", "long_description": "this is long description", ' \
                   '"short_feature": "this is short feature description", "keywords": "keyword1 keyword2 keyword3 ' \
                   'keyword4"}'
 
@@ -36,19 +36,21 @@ def get_static_filepath(static_path):
     icon_512px = os.path.join(static_path, "Icon image_icon_512.png")
     icon_114px = os.path.join(static_path, "Icon image_icon_114.png")
     apk_filepath = [os.path.join(static_path, i) for i in os.listdir(static_path) if i.endswith(".apk")][0]
-    screenshots = [i for i in os.listdir(static_path) if i.startswith("Screenshot ")]
+    screenshots = [os.path.join(static_path, i) for i in os.listdir(static_path) if i.startswith("Screenshot ")]
     data = {"icon_512": icon_512px, "icon_114": icon_114px,
-            "screenshots_img": "\n".join(screenshots), "apk_file": apk_filepath}
+            "screenshots_img": "\n".join(screenshots), "apk_filepath": apk_filepath}
     return data
 
 
-def get_descriptions(model, app_name, app_cat, app_sub_cat):
+def get_descriptions(model, app_name, app_cat, app_sub_cat, retry=0):
     input_prompt = prompt.format(app_name=app_name, app_cat=app_cat, app_sub_cat=app_sub_cat,
                                  response_format=response_format)
     res = model.generate_content(input_prompt)
     try:
         res = json.loads(res.text.replace("\n", ""))
     except json.JSONDecodeError:
+        if retry < 3:
+            return get_descriptions(model, app_name, app_cat, app_sub_cat, retry=retry+1)
         res = {"short_description": "Unable to generate short description",
                "long_description": "Unable to generate long description",
                "short_feature": "Unable to generate short feature",
@@ -85,14 +87,17 @@ def login(driver, email, password, totp):
 def create_new_app(driver, app_name, app_category, app_sub_category):
     driver.get(STATIC_DATA["create_new_app_url"])
     random_sleep()
+
     write(app_name, into="App title")
     random_sleep()
+
     click(S('//*[@id="categoryLevel"]'))
     a = find_all(S(".sc-jIZahH.knFoqZ.sc-dwLEzm.ewuvWr"))[0]
     options_div = a.web_element.find_element(By.CSS_SELECTOR, ".sc-fEOsli.XZUkw.sc-hHLeRK.sc-iAvgwm.fPVxMZ.fmariK")
     for i in options_div.find_elements(By.CSS_SELECTOR, ".sc-cCsOjp.cbnA-Do"):
         if i.text.lower() == app_category.lower():
             click(i)
+            break
 
     random_sleep()
     click(S('//*[@id="subcategoryLevel"]'))
@@ -125,13 +130,15 @@ def create_app_page2(driver, static_path, game_features, language_support):
     for lang in find_all(S(".orientation-right.css-z7vmfr", above="Language Support")):
         if lang.web_element.text == game_features:
             print(lang.web_element.text)
-            click(lang)
+            lang.web_element.click()
+            break
 
     random_sleep()
     for lang in find_all(S(".orientation-right.css-z7vmfr", below="Language Support")):
         if lang.web_element.text == language_support:
             print(lang.web_element.text)
-            click(lang)
+            lang.web_element.click()
+            break
 
     for i in range(300):
         if find_all(S("//h5[text()='1 file(s) uploaded']")):
@@ -144,37 +151,37 @@ def create_app_page2(driver, static_path, game_features, language_support):
     random_sleep()
     driver.execute_script(STATIC_DATA["scroll_top_query"])
     random_sleep()
-    click(Button("Next"))
+    driver.find_element(By.XPATH, "//button[text() = 'Next']").click()
 
 
 def create_app_page3(driver):
     random_sleep()
-    for i in find_all(S(".orientation-right.css-qbmcu0")):
-        if i.web_element.text == "All age groups":
-            print(i.web_element.text)
-            click(i)
-
+    driver.find_element(By.XPATH, '//*[@id="target-audience-radio-group"]//input[@value="all"]').click()
     random_sleep()
-    for i in driver.find_elements(By.XPATH, "//input[@name='collectPrivacyLabel']"):
-        if i.get_attribute("value") == "no":
-            click(i)
+    driver.find_element(By.XPATH, "//input[@name='collectPrivacyLabel'][@value='no']").click()
+
+    # random_sleep()
+    # for i in driver.find_elements(By.XPATH, "//input[@name='collectPrivacyLabel']"):
+    #     if i.get_attribute("value") == "no":
+    #         i.click()
+    #         break
 
     random_sleep()
     click("View questionnaire")
     random_sleep()
     for i in driver.find_elements(By.XPATH, "//input[@aria-label='None' or @aria-label='No']"):
-        click(i)
+        i.click()
         time.sleep(0.5)
 
-    random_sleep()
-    click(driver.find_element(By.NAME, "content-attenuating-element-academic"))
+    random_sleep(min_=2, max_=5)
+    driver.find_element(By.NAME, "content-attenuating-element-academic").click()
     time.sleep(1)
     press(ESCAPE)
     random_sleep()
 
     driver.execute_script(STATIC_DATA["scroll_top_query"])
     random_sleep()
-    click(Button("Next"))
+    driver.find_element(By.XPATH, "//button[text() = 'Next']").click()
 
 
 def contains_in(text, lst):
@@ -187,81 +194,105 @@ def contains_in(text, lst):
 
 
 def create_app_page4(driver, model, app_name, app_category, app_sub_category, static_path):
+    try:
+        random_sleep()
+        data = get_descriptions(model, app_name, app_category, app_sub_category)
+        imgs = get_static_filepath(static_path)
 
-    random_sleep()
-    data = get_descriptions(model, app_name, app_category, app_sub_category)
-    imgs = get_static_filepath(static_path)
-
-    write(data["short_description"], into="Short description")
-    random_sleep()
-    write(data["long_description"], into="Long description")
-    random_sleep()
-    write(data["short_feature"], into="Product feature bullets")
-    random_sleep()
-    write(data["keywords"], into="Add keywords")
-    random_sleep()
-
-    form = None
-    for form in find_all(S("form")):
-        h3 = form.web_element.find_element(By.TAG_NAME, "h3")
-        if h3.text == "Images and videos":
-            print(h3.text)
-            break
-
-    random_sleep()
-    for i in form.web_element.find_elements(By.XPATH,
-            "//div[@style='display: flex; gap: 0px; flex-direction: column; width: 50%;']"):
-
-        # upload 512px
-        random_sleep(min_=2, max_=4)
-        try:
-            if contains_in(i.text, ["512 x 512px PNG"]):
-                attach_file(imgs["icon_512"], to=i.find_element(By.TAG_NAME, "input"))
-                i.find_elements(By.TAG_NAME, "img")
-        except NoSuchElementException:
-            print("512")
-
-        try:
-            random_sleep(min_=2, max_=4)
-            # upload 114px
-            if contains_in(i.text, ["114 x 114px PNG"]):
-                attach_file(imgs["icon_114"], to=i.find_element_by_tag_name("input"))
-                i.find_elements(By.TAG_NAME, "img")
-        except NoSuchElementException:
-            print("114")
-
-        try:
-            # upload screenshots
-            random_sleep(min_=2, max_=4)
-            if contains_in(i.text, ["Screenshots (minimum 3)"]):
-                img_filepaths = "\n".join(imgs["screenshots_img"])
-                attach_file(img_filepaths, to=i.find_element_by_tag_name("input"))
-                i.find_elements(By.TAG_NAME, "img")
-        except NoSuchElementException:
-            print("ss")
+        write(data["short_description"], into="Short description")
+        random_sleep()
+        write(data["long_description"], into="Long description")
+        random_sleep()
+        write(data["short_feature"], into="Product feature bullets")
+        random_sleep()
+        write(data["keywords"], into="Add keywords")
         random_sleep()
 
-    for i in range(120):
-        counter = 0
-        for j in form.web_element.find_elements(By.XPATH,
-             "//div[@style='display: flex; gap: 0px; flex-direction: column; width: 50%;']"):
-            if j.find_elements(By.XPATH, "img"):
-                counter += 1
-        if counter >= 3:
-            print("all images present..")
-            break
-        counter = 0
-        time.sleep(1)
+        form = None
+        for form in find_all(S("form")):
+            h3 = form.web_element.find_element(By.TAG_NAME, "h3")
+            if h3.text == "Images and videos":
+                print(h3.text)
+                break
 
-    driver.execute_script(STATIC_DATA["scroll_top_query"])
-    random_sleep()
-    click(Button("Next"))
+        random_sleep()
+        for i in form.web_element.find_elements(By.XPATH,
+                                                "//div[@style='display: flex; gap: 0px; flex-direction: column; width: 50%;']"):
+
+            # upload 512px
+            random_sleep(min_=2, max_=4)
+            try:
+                if contains_in(i.text, ["512 x 512px PNG"]):
+                    attach_file(imgs["icon_512"], to=i.find_element(By.TAG_NAME, "input"))
+                    i.find_elements(By.TAG_NAME, "img")
+            except NoSuchElementException:
+                print("512")
+
+            try:
+                random_sleep(min_=2, max_=4)
+                # upload 114px
+                if contains_in(i.text, ["114 x 114px PNG"]):
+                    attach_file(imgs["icon_114"], to=i.find_element(By.TAG_NAME, "input"))
+                    i.find_elements(By.TAG_NAME, "img")
+            except NoSuchElementException:
+                print("114")
+
+            try:
+                # upload screenshots
+                random_sleep(min_=2, max_=4)
+                if contains_in(i.text, ["Screenshots (minimum 3)"]):
+                    attach_file(imgs["screenshots_img"], to=i.find_element(By.TAG_NAME, "input"))
+                    i.find_elements(By.TAG_NAME, "img")
+            except NoSuchElementException:
+                print("ss")
+            random_sleep()
+
+        for i in range(120):
+            counter = 0
+            for j in form.web_element.find_elements(By.XPATH,
+                                                    "//div[@style='display: flex; gap: 0px; flex-direction: column; width: 50%;']"):
+                if j.find_elements(By.XPATH, "//img"):
+                    counter += 1
+            if counter >= 3:
+                print("all images present..")
+                break
+            counter = 0
+            time.sleep(1)
+
+        driver.execute_script(STATIC_DATA["scroll_top_query"])
+        random_sleep()
+        driver.find_element(By.XPATH, "//button[text() = 'Next']").click()
+    except Exception as e:
+        print(e)
 
 
 def create_app_page5(driver):
-    click("I certify this")
-    random_sleep()
-    publish_time = (datetime.now() + timedelta(hours=1.1)).strftime("%B %d, %Y %H:%M")
-    write(publish_time, into="Select a date")
-    random_sleep()
-    press(ENTER)
+    try:
+        click("I certify this")
+        random_sleep()
+        publish_time = (datetime.now() + timedelta(hours=1.1)).strftime("%B %d, %Y %H:%M")
+        write(publish_time, into="Select a date")
+        random_sleep()
+        press(ENTER)
+        random_sleep(min_=5, max_=10)
+        submit_button = driver.find_element(By.XPATH, '//button[text()="Submit App"]')
+        if not submit_button.is_enabled():
+            for i in range(4):
+                menus = get_menu_elements(driver)
+                menus[i].click()
+                random_sleep()
+        submit_button.click()
+    except Exception as e:
+        print(e)
+
+
+def get_menu_elements(driver):
+    allowed_menu = ["Upload your app file", "Target your app", "Appstore details", "Review & submit"]
+    all_menus = driver.find_elements(By.XPATH, "//span[@class ='typography-t200']")
+    menus = []
+    for i in all_menus:
+        if i.text in allowed_menu:
+            menus.append(i)
+    return menus
+
+
