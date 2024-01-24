@@ -43,12 +43,12 @@ def get_static_filepath(static_path):
             "screenshots_img": "\n".join(screenshots), "apk_filepath": apk_filepath}
     if not icon_114px and icon_512px and apk_filepath and screenshots:
         raise ValueError(f"unable to get all static files.. {data}")
-    logger.info(f"static files are {data}")
+    logger.debug(f"static files are {data}")
     return data
 
 
 def get_descriptions(model, app_name, app_cat, app_sub_cat, retry=0):
-    logger.info(f"Generating descriptions for {app_name}")
+    logger.debug(f"Generating descriptions for {app_name}")
     input_prompt = prompt.format(app_name=app_name, app_cat=app_cat, app_sub_cat=app_sub_cat,
                                  response_format=response_format)
     res = model.generate_content(input_prompt)
@@ -71,8 +71,17 @@ def random_sleep(min_=1, max_=3):
 
 def login(driver, email, password, totp, retry=0):
     try:
-        driver.get(STATIC_DATA["dashboard_url"])
-        random_sleep()
+        if retry < 1:
+            driver.get(STATIC_DATA["dashboard_url"])
+            random_sleep()
+
+        captcha = driver.find_elements(By.XPATH, '//h4[contains(text(), "Enter the characters you see below")]')
+        if captcha and retry < 3:
+            logger.debug("Captcha detected waiting for user to fill the captcha")
+            input("captcha detected. Please fill captcha and press enter to continue..")
+            logger.debug(f"Retrying {retry} times to login")
+            return login(driver, email, password, totp, retry=retry+1)
+
         logger.debug(f"entering email {email}")
         write(email, into='email')
         random_sleep()
@@ -175,7 +184,8 @@ def create_app_page2(driver, static_path, game_features, language_support):
         random_sleep(min_=1, max_=2)
 
     random_sleep()
-    click(S("//label[@class='orientation-right css-qbmcu0']//span[text()='No']"))
+    # click(S("//label[@class='orientation-right css-qbmcu0']//span[text()='No']"))     # DRM No
+    click(S("//label[@class='orientation-right css-qbmcu0']//span[text()='Yes']"))      # DRM Yes
 
     random_sleep()
     driver.execute_script(STATIC_DATA["scroll_top_query"])
@@ -187,7 +197,10 @@ def create_app_page2(driver, static_path, game_features, language_support):
 def create_app_page3(driver):
     logger.debug("filling details to page 3")
     random_sleep()
-    driver.find_element(By.XPATH, '//*[@id="target-audience-radio-group"]//input[@value="all"]').click()
+    # driver.find_element(By.XPATH, '//*[@id="target-audience-radio-group"]//input[@value="all"]').click()  # all age group
+    driver.find_element(By.XPATH, "//input[@id='16-17 years of age']").click()     # check 16-17 age group
+    random_sleep()
+    driver.find_element(By.XPATH, '//input[@id="18+ years of age"]').click()    # check 18+ age group
     random_sleep()
     driver.find_element(By.XPATH, "//input[@name='collectPrivacyLabel'][@value='no']").click()
 

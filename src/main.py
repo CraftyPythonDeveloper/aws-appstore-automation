@@ -10,6 +10,7 @@ import google.generativeai as genai
 import warnings
 
 warnings.simplefilter(action='ignore', category=UserWarning)
+warnings.simplefilter(action='ignore', category=DeprecationWarning)
 
 
 load_dotenv()
