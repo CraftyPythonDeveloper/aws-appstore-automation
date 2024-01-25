@@ -48,4 +48,4 @@ if __name__ == "__main__":
             create_app_page5(driver)
             logger.info(f"Successfully created {row.app_name} app..")
         except Exception as e:
-            logger.exception(e)
+            logger.error(e)

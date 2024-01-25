@@ -181,6 +181,8 @@ def create_app_page2(driver, static_path, game_features, language_support):
         if find_all(S("//h5[text()='1 file(s) uploaded']")):
             logger.debug("Apk file uploaded..")
             break
+        elif find_all(S(".react-toast-notifications__toast__content.css-1ad3zal")):
+            raise AttributeError("Apk file already uploaded. Skipping the current app..")
         random_sleep(min_=1, max_=2)
 
     random_sleep()
@@ -232,81 +234,78 @@ def contains_in(text, lst):
 
 
 def create_app_page4(driver, model, app_name, app_category, app_sub_category, static_path):
-    try:
-        random_sleep()
-        data = get_descriptions(model, app_name, app_category, app_sub_category)
-        logger.debug(f"Generated data - {data}")
-        imgs = get_static_filepath(static_path)
-        logger.debug(f"Static paths - {imgs}")
-        write(data["short_description"], into="Short description")
-        random_sleep()
-        write(data["long_description"], into="Long description")
-        random_sleep()
-        write(data["short_feature"], into="Product feature bullets")
-        random_sleep()
-        write(data["keywords"], into="Add keywords")
-        random_sleep()
+    random_sleep()
+    data = get_descriptions(model, app_name, app_category, app_sub_category)
+    logger.debug(f"Generated data - {data}")
+    imgs = get_static_filepath(static_path)
+    logger.debug(f"Static paths - {imgs}")
+    write(data["short_description"], into="Short description")
+    random_sleep()
+    write(data["long_description"], into="Long description")
+    random_sleep()
+    write(data["short_feature"], into="Product feature bullets")
+    random_sleep()
+    write(data["keywords"], into="Add keywords")
+    random_sleep()
 
-        form = None
-        for form in find_all(S("form")):
-            h3 = form.web_element.find_element(By.TAG_NAME, "h3")
-            if h3.text == "Images and videos":
-                logger.debug("Found form with images and videos elements")
-                break
+    form = None
+    for form in find_all(S("form")):
+        h3 = form.web_element.find_element(By.TAG_NAME, "h3")
+        if h3.text == "Images and videos":
+            logger.debug("Found form with images and videos elements")
+            break
 
-        random_sleep()
-        for i in form.web_element.find_elements(By.XPATH,
-                                                "//div[@style='display: flex; gap: 0px; flex-direction: column; width: 50%;']"):
+    random_sleep()
+    for i in form.web_element.find_elements(By.XPATH,
+                                            "//div[@style='display: flex; gap: 0px; flex-direction: column; width: 50%;']"):
 
-            # upload 512px
+        # upload 512px
+        random_sleep(min_=2, max_=4)
+        try:
+            if contains_in(i.text, ["512 x 512px PNG"]):
+                logger.debug("Found 512p icon element to upload icon")
+                attach_file(imgs["icon_512"], to=i.find_element(By.TAG_NAME, "input"))
+                i.find_elements(By.TAG_NAME, "img")
+        except NoSuchElementException:
+            logger.debug("Unable to find 512px icon element")
+
+        try:
             random_sleep(min_=2, max_=4)
-            try:
-                if contains_in(i.text, ["512 x 512px PNG"]):
-                    logger.debug("Found 512p icon element to upload icon")
-                    attach_file(imgs["icon_512"], to=i.find_element(By.TAG_NAME, "input"))
-                    i.find_elements(By.TAG_NAME, "img")
-            except NoSuchElementException:
-                logger.debug("Unable to find 512px icon element")
+            # upload 114px
+            if contains_in(i.text, ["114 x 114px PNG"]):
+                logger.debug("Found 114px icon element to upload icon")
+                attach_file(imgs["icon_114"], to=i.find_element(By.TAG_NAME, "input"))
+                i.find_elements(By.TAG_NAME, "img")
+        except NoSuchElementException:
+            logger.debug("Unable to find 114px element to upload icon")
 
-            try:
-                random_sleep(min_=2, max_=4)
-                # upload 114px
-                if contains_in(i.text, ["114 x 114px PNG"]):
-                    logger.debug("Found 114px icon element to upload icon")
-                    attach_file(imgs["icon_114"], to=i.find_element(By.TAG_NAME, "input"))
-                    i.find_elements(By.TAG_NAME, "img")
-            except NoSuchElementException:
-                logger.debug("Unable to find 114px element to upload icon")
-
-            try:
-                # upload screenshots
-                random_sleep(min_=2, max_=4)
-                if contains_in(i.text, ["Screenshots (minimum 3)"]):
-                    logger.debug("Found screenshot element to upload screenshots")
-                    attach_file(imgs["screenshots_img"], to=i.find_element(By.TAG_NAME, "input"))
-                    i.find_elements(By.TAG_NAME, "img")
-            except NoSuchElementException:
-                logger.error("Unable to find screenshot elements")
-            random_sleep()
-
-        for i in range(120):
-            counter = 0
-            for j in form.web_element.find_elements(By.XPATH,
-                                                    "//div[@style='display: flex; gap: 0px; flex-direction: column; width: 50%;']"):
-                if j.find_elements(By.XPATH, "//img"):
-                    counter += 1
-            if counter >= 3:
-                logger.debug("all images present..")
-                break
-            counter = 0
-            time.sleep(1)
-
-        driver.execute_script(STATIC_DATA["scroll_top_query"])
+        try:
+            # upload screenshots
+            random_sleep(min_=2, max_=4)
+            if contains_in(i.text, ["Screenshots (minimum 3)"]):
+                logger.debug("Found screenshot element to upload screenshots")
+                attach_file(imgs["screenshots_img"], to=i.find_element(By.TAG_NAME, "input"))
+                i.find_elements(By.TAG_NAME, "img")
+        except NoSuchElementException:
+            logger.error("Unable to find screenshot elements")
         random_sleep()
-        driver.find_element(By.XPATH, "//button[text() = 'Next']").click()
-        logger.debug("Clicked on Next button")
-    except Exception as e:
-        logger.exception(e)
+
+    for i in range(120):
+        counter = 0
+        for j in form.web_element.find_elements(By.XPATH,
+                                                "//div[@style='display: flex; gap: 0px; flex-direction: column; width: 50%;']"):
+            if j.find_elements(By.XPATH, "//img"):
+                counter += 1
+        if counter >= 3:
+            logger.debug("all images present..")
+            break
+        counter = 0
+        time.sleep(1)
+
+    driver.execute_script(STATIC_DATA["scroll_top_query"])
+    random_sleep()
+    driver.find_element(By.XPATH, "//button[text() = 'Next']").click()
+    logger.debug("Clicked on Next button")
 
 
 def create_app_page5(driver):
