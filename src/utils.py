@@ -7,18 +7,25 @@ from helium import *
 from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
 from datetime import datetime, timedelta
-from exceptions import LoginError
 from logger import logger
+from amazoncaptcha import AmazonCaptcha
+import pyotp
+
 
 STATIC_DATA = {
     "dashboard_url": "https://developer.amazon.com/dashboard",
     "create_new_app_url": "https://developer.amazon.com/apps-and-games/console/app/new.html",
     "scroll_top_query": "document.documentElement.scrollTop = 0;",
+    "logout_url": "https://www.amazon.com/ap/signin?openid.return_to=https%3A%2F%2Fdeveloper.amazon.com%2Fapps-and"
+                  "-games&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid"
+                  ".assoc_handle=mas_dev_portal&openid.mode=logout&openid.claimed_id=http%3A%2F%2Fspecs.openid.net"
+                  "%2Fauth%2F2.0%2Fidentifier_select&openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0&language"
+                  "=en_US",
 
 }
 prompt = """You are an android app description suggestion agent and your job is to generate short description, 
             long description and short feature description of android app by using below provided details and make sure to use 
-            response format as refrence to provide response in the same key value pair, the key name should be strictly followed. 
+            response format as reference to provide response in the same key value pair, the key name should be strictly followed. 
             ### details App Name: {app_name} App Categorie: {app_cat} App Sub Categorie: {app_sub_cat}
 
             ### Response format
@@ -69,46 +76,53 @@ def random_sleep(min_=1, max_=3):
     time.sleep(random.randint(min_, max_))
 
 
-def login(driver, email, password, totp, retry=0):
+def solve_captcha(driver):
     try:
-        if retry < 1:
-            driver.get(STATIC_DATA["dashboard_url"])
-            random_sleep()
+        link = find_all(S("img", below="Enter the characters you see below"))[0].web_element.get_attribute("src")
+    except IndexError:
+        img = driver.find_element(By.XPATH, "//img[contains(@src, 'https://images-na.ssl-images-amazon.com/captcha')]")
+        link = img.get_attribute("src")
+    logger.debug(f"Extracted captcha link {link}")
+    captcha = AmazonCaptcha.fromlink(link)
+    text = captcha.solve(keep_logs=True)
+    logger.debug(f"Solved captcha, solution text is {text}")
+    write(text, into="Type characters")
+    click(Button("Continue shopping"))
+    return driver
 
-        captcha = driver.find_elements(By.XPATH, '//h4[contains(text(), "Enter the characters you see below")]')
-        if captcha and retry < 3:
-            logger.debug("Captcha detected waiting for user to fill the captcha")
-            input("captcha detected. Please fill captcha and press enter to continue..")
-            logger.debug(f"Retrying {retry} times to login")
-            return login(driver, email, password, totp, retry=retry+1)
 
-        logger.debug(f"entering email {email}")
-        write(email, into='email')
+def login(driver, email, password, totp, retry=0):
+    totp_obj = pyotp.TOTP(totp)
+    if retry < 1:
+        driver.get(STATIC_DATA["dashboard_url"])
         random_sleep()
-        logger.debug(f"entering password..")
-        write(password, into='password')
-        driver.execute_script(STATIC_DATA["scroll_top_query"])
-        logger.debug(f"Clicking signin button to login")
-        click("sign in")
-        random_sleep()
-        if "/ap/mfa?ie=" in driver.current_url:
-            logger.debug(f"entering MFA code")
-            write(totp.now(), into="Enter OTP")
-        driver.execute_script(STATIC_DATA["scroll_top_query"])
-        random_sleep()
-        logger.debug(f"Clicking signin button to login")
-        click("sign in")
-        random_sleep()
-        if "home" in driver.current_url:
-            logger.debug("login success")
-    except Exception as e:
-        captcha = driver.find_element(By.XPATH, '//h4[contains(text(), "Enter the characters you see below")]')
-        if retry > 3 or not captcha:
-            raise LoginError
-        logger.debug("Captcha detected waiting for user to fill the captcha")
-        input("captcha detected. Please fill captcha and press enter to continue..")
-        login(driver, email, password, totp, retry=retry+1)
+
+    captcha = driver.find_elements(By.XPATH, '//h4[contains(text(), "Enter the characters you see below")]')
+    if captcha and retry < 3:
+        logger.debug("Captcha detected, Solving captcha..")
+        solve_captcha(driver)
         logger.debug(f"Retrying {retry} times to login")
+        return login(driver, email, password, totp, retry=retry+1)
+
+    logger.debug(f"entering email {email}")
+    write(email, into='email')
+    random_sleep()
+    logger.debug(f"entering password..")
+    write(password, into='password')
+    driver.execute_script(STATIC_DATA["scroll_top_query"])
+    logger.debug(f"Clicking signin button to login")
+    click("sign in")
+    random_sleep()
+    if "/ap/mfa?ie=" in driver.current_url:
+        logger.debug(f"entering MFA code")
+        write(totp_obj.now(), into="Enter OTP")
+    driver.execute_script(STATIC_DATA["scroll_top_query"])
+    random_sleep()
+    logger.debug(f"Clicking signin button to login")
+    click("sign in")
+    random_sleep()
+    if "home" in driver.current_url:
+        logger.debug("login success")
 
 
 def create_new_app(driver, app_name, app_category, app_sub_category):
@@ -309,29 +323,26 @@ def create_app_page4(driver, model, app_name, app_category, app_sub_category, st
 
 
 def create_app_page5(driver):
-    try:
-        logger.debug("submitting final page")
-        click("I certify this")
-        random_sleep()
-        publish_time = (datetime.now() + timedelta(hours=1.1)).strftime("%B %d, %Y %H:%M")
-        write(publish_time, into="Select a date")
-        random_sleep()
-        press(ENTER)
-        random_sleep(min_=5, max_=10)
-        submit_button = driver.find_element(By.XPATH, '//button[text()="Submit App"]')
-        if not submit_button.is_enabled():
-            logger.debug("Submit button is disabled, clicking on each image to revalidate the menus..")
-            for i in range(4):
-                menus = get_menu_elements(driver)
-                menus[i].click()
-                logger.debug(f"Clicked {i} menu")
-                random_sleep(min_=2)
-        logger.debug("Clicking on submit button..")
-        submit_button = driver.find_element(By.XPATH, '//button[text()="Submit App"]')
-        submit_button.click()
-        logger.debug("App submitted..")
-    except Exception as e:
-        logger.exception(e)
+    logger.debug("submitting final page")
+    click("I certify this")
+    random_sleep()
+    publish_time = (datetime.now() + timedelta(hours=1.1)).strftime("%B %d, %Y %H:%M")
+    write(publish_time, into="Select a date")
+    random_sleep()
+    press(ENTER)
+    random_sleep(min_=5, max_=10)
+    submit_button = driver.find_element(By.XPATH, '//button[text()="Submit App"]')
+    if not submit_button.is_enabled():
+        logger.debug("Submit button is disabled, clicking on each image to revalidate the menus..")
+        for i in range(4):
+            menus = get_menu_elements(driver)
+            menus[i].click()
+            logger.debug(f"Clicked {i} menu")
+            random_sleep(min_=2)
+    logger.debug("Clicking on submit button..")
+    submit_button = driver.find_element(By.XPATH, '//button[text()="Submit App"]')
+    submit_button.click()
+    logger.debug("App submitted..")
 
 
 def get_menu_elements(driver):

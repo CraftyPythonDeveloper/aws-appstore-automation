@@ -4,4 +4,5 @@ selenium==4.16.0
 pandas==2.2.0
 pyotp==2.9.0
 python-dotenv==1.0.0
-google-generativeai
+google-generativeai==0.3.2
+amazoncaptcha==0.5.11
