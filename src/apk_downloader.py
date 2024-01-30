@@ -31,10 +31,14 @@ def search_apk(query):
 
 def download_n_save(url, filename, save_path_dir):
     filepath = os.path.join(save_path_dir, filename)
-    response = session.get(url)
 
-    with open(filepath, "wb") as fp:
-        fp.write(response.content)
+    with session.get(url, stream=True, allow_redirects=True) as req:
+        if not req.ok:
+            logger.error(f"unable to download {filename} file..")
+            req.raise_for_status()
+        with open(filepath, "wb") as fp:
+            for data in req.iter_content(chunk_size=8192):
+                fp.write(data)
 
     return filepath
 
@@ -47,12 +51,12 @@ def get_apk_image_urls(apk_page_url, package_name):
     app_name = soup.find("div", class_="title_link").text.strip()
     icon_url = apk_info_div.find("img").get("src")
     data = dict()
+    data[f"{app_name}.apk"] = apk_base_url.format(package_name=package_name)
     data["Icon image_icon_114.png"] = urlunparse(urlparse(icon_url)._replace(query=urlencode({'fakeurl': '1', 'w': '114', 'type': '.png'})))
     data["Icon image_icon_512.png"] = urlunparse(urlparse(icon_url)._replace(query=urlencode({'fakeurl': '1', 'w': '512', 'type': '.png'})))
     screenshots_loc = soup.find("div", id="screen").find_all("a",  class_="screen-pswp")
     for i, ss in enumerate(screenshots_loc):
         data[f"Screenshot {i}.png"] = urlunparse(urlparse(ss.get("href"))._replace(query=urlencode({'fakeurl': '1', 'w': '720', 'type': '.png'})))
-    data[f"{app_name}.apk"] = apk_base_url.format(package_name=package_name)
     return data
 
 
