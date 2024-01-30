@@ -41,9 +41,9 @@ if __name__ == "__main__":
         logger.info("Login success..")
         for row in temp_df.itertuples():
             try:
-                package_dir = download_apk_data(row.google_play_apk_url)
-                logger.info(f"Creating {row.app_name} app to portal..")
-                create_new_app(driver, row.app_name, row.app_category, row.app_sub_category)
+                package_dir, app_name = download_apk_data(row.google_play_apk_url)
+                logger.info(f"Creating {app_name} app to portal..")
+                create_new_app(driver, app_name, row.app_category, row.app_sub_category)
                 logger.info(f"Processing step 2")
                 random_sleep(min_=4, max_=8)
                 create_app_page2(driver, package_dir, row.game_features, row.language_support)
@@ -52,11 +52,11 @@ if __name__ == "__main__":
                 create_app_page3(driver)
                 logger.info(f"Processing step 4")
                 random_sleep(min_=4, max_=8)
-                create_app_page4(driver, model, row.app_name, row.app_category, row.app_sub_category, package_dir)
+                create_app_page4(driver, model, app_name, row.app_category, row.app_sub_category, package_dir)
                 logger.info(f"Processing step 5")
                 random_sleep(min_=4, max_=8)
                 create_app_page5(driver)
-                logger.info(f"Successfully created {row.app_name} app..")
+                logger.info(f"Successfully created {app_name} app..")
             except Exception as e:
                 logger.exception(e)
         logger.info(f"All App submission for user {username} is complete..")

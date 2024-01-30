@@ -32,7 +32,7 @@ def search_apk(query):
 def download_n_save(url, filename, save_path_dir):
     filepath = os.path.join(save_path_dir, filename)
 
-    with session.get(url, stream=True, allow_redirects=True) as req:
+    with requests.get(url, stream=True, allow_redirects=True, headers=headers) as req:
         if not req.ok:
             logger.error(f"unable to download {filename} file..")
             req.raise_for_status()
@@ -51,13 +51,15 @@ def get_apk_image_urls(apk_page_url, package_name):
     app_name = soup.find("div", class_="title_link").text.strip()
     icon_url = apk_info_div.find("img").get("src")
     data = dict()
-    data[f"{app_name}.apk"] = apk_base_url.format(package_name=package_name)
+    ''.join(e for e in app_name if e.isalnum())
+    data[f"{''.join(e for e in app_name if e.isalnum())}.apk"] = apk_base_url.format(package_name=package_name)
     data["Icon image_icon_114.png"] = urlunparse(urlparse(icon_url)._replace(query=urlencode({'fakeurl': '1', 'w': '114', 'type': '.png'})))
     data["Icon image_icon_512.png"] = urlunparse(urlparse(icon_url)._replace(query=urlencode({'fakeurl': '1', 'w': '512', 'type': '.png'})))
     screenshots_loc = soup.find("div", id="screen").find_all("a",  class_="screen-pswp")
     for i, ss in enumerate(screenshots_loc):
-        data[f"Screenshot {i}.png"] = urlunparse(urlparse(ss.get("href"))._replace(query=urlencode({'fakeurl': '1', 'w': '720', 'type': '.png'})))
-    return data
+        data[f"Screenshot {i}.png"] = urlunparse(urlparse(ss.get("href"))._replace(query=urlencode(
+            {'fakeurl': '1', 'w': '720', 'h': '1280', 'type': '.png'})))
+    return data, app_name
 
 
 def download_apk_data(google_play_url):
@@ -68,10 +70,10 @@ def download_apk_data(google_play_url):
     if not os.path.exists(package_path):
         os.mkdir(package_path)
     package_url = search_apk(package_name)
-    data = get_apk_image_urls(package_url, package_name)
+    data, app_name = get_apk_image_urls(package_url, package_name)
     logger.debug(f"extracted all the apk data -- {data}")
     for filename, url in data.items():
         logger.debug(f"downloading and saving file {filename} -- {url}")
         download_n_save(url, filename, package_path)
     logger.info(f"Saved the apk file and images in {package_name} folder.")
-    return package_path
+    return package_path, app_name
