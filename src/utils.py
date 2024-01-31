@@ -56,6 +56,8 @@ def get_static_filepath(static_path):
 
 def get_descriptions(model, app_name, app_cat, app_sub_cat, retry=0):
     logger.debug(f"Generating descriptions for {app_name}")
+    if not app_sub_cat:
+        app_sub_cat = ""
     input_prompt = prompt.format(app_name=app_name, app_cat=app_cat, app_sub_cat=app_sub_cat,
                                  response_format=response_format)
     res = model.generate_content(input_prompt)
@@ -143,15 +145,16 @@ def create_new_app(driver, app_name, app_category, app_sub_category):
             click(i)
             break
 
-    logger.debug(f"selecting sub category {app_sub_category}")
-    random_sleep()
-    click(S('//*[@id="subcategoryLevel"]'))
-    a = find_all(S(".sc-jIZahH.knFoqZ.sc-dwLEzm.ewuvWr"))[1]
-    options_div = a.web_element.find_element(By.CSS_SELECTOR, ".sc-fEOsli.XZUkw.sc-hHLeRK.sc-iAvgwm.fPVxMZ.fmariK")
-    for i in options_div.find_elements(By.CSS_SELECTOR, ".sc-cCsOjp.cbnA-Do"):
-        if i.text.lower() == app_sub_category.lower():
-            logger.debug("Found the element to select app sub category")
-            i.click()
+    if app_sub_category:
+        logger.debug(f"selecting sub category {app_sub_category}")
+        random_sleep()
+        click(S('//*[@id="subcategoryLevel"]'))
+        a = find_all(S(".sc-jIZahH.knFoqZ.sc-dwLEzm.ewuvWr"))[1]
+        options_div = a.web_element.find_element(By.CSS_SELECTOR, ".sc-fEOsli.XZUkw.sc-hHLeRK.sc-iAvgwm.fPVxMZ.fmariK")
+        for i in options_div.find_elements(By.CSS_SELECTOR, ".sc-cCsOjp.cbnA-Do"):
+            if i.text.lower() == app_sub_category.lower():
+                logger.debug("Found the element to select app sub category")
+                i.click()
 
     random_sleep()
     click("Save")
@@ -196,7 +199,7 @@ def create_app_page2(driver, static_path, game_features, language_support):
             logger.debug("Apk file uploaded..")
             break
         elif find_all(S(".react-toast-notifications__toast__content.css-1ad3zal")):
-            raise AttributeError("Apk file already uploaded. Skipping the current app..")
+            raise AttributeError("Apk file already uploaded or amazon rejected. Skipping the current app..")
         random_sleep(min_=1, max_=2)
 
     random_sleep()
@@ -325,11 +328,11 @@ def create_app_page4(driver, model, app_name, app_category, app_sub_category, st
 def create_app_page5(driver):
     logger.debug("submitting final page")
     click("I certify this")
-    random_sleep()
-    publish_time = (datetime.now() + timedelta(hours=1.1)).strftime("%B %d, %Y %H:%M")
-    write(publish_time, into="Select a date")
-    random_sleep()
-    press(ENTER)
+    # random_sleep()
+    # publish_time = (datetime.now() + timedelta(hours=1.1)).strftime("%B %d, %Y %H:%M")
+    # write(publish_time, into="Select a date")
+    # random_sleep()
+    # press(ENTER)
     random_sleep(min_=5, max_=10)
     submit_button = driver.find_element(By.XPATH, '//button[text()="Submit App"]')
     if not submit_button.is_enabled():

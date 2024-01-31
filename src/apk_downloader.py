@@ -4,6 +4,8 @@ from urllib.parse import parse_qsl, urlunparse, urlparse, urlencode
 from pathlib import Path
 import os
 from logger import logger
+from PIL import Image
+
 
 WRK_DIR = Path(__file__).resolve().parents[1]
 APK_DATA_PATH = os.path.join(WRK_DIR, "src", "apk_data")
@@ -43,6 +45,20 @@ def download_n_save(url, filename, save_path_dir):
     return filepath
 
 
+def resize_images(img_dir):
+    imgs = [os.path.join(img_dir, file) for file in os.listdir(img_dir) if file.endswith(".png") and "Icon" not in file]
+
+    for image in imgs:
+        img = Image.open(image)
+        width, height = img.size
+        if width > height:
+            new_size = (1280, 720)
+        else:
+            new_size = (720, 1280)
+        resized_img = img.resize(new_size)
+        resized_img.save(image)
+
+
 def get_apk_image_urls(apk_page_url, package_name):
     apk_base_url = "https://d.apkpure.net/b/APK/{package_name}?version=latest"
     response = session.get(apk_page_url)
@@ -58,7 +74,7 @@ def get_apk_image_urls(apk_page_url, package_name):
     screenshots_loc = soup.find("div", id="screen").find_all("a",  class_="screen-pswp")
     for i, ss in enumerate(screenshots_loc):
         data[f"Screenshot {i}.png"] = urlunparse(urlparse(ss.get("href"))._replace(query=urlencode(
-            {'fakeurl': '1', 'w': '720', 'h': '1280', 'type': '.png'})))
+            {'fakeurl': '1', 'type': '.png'})))
     return data, app_name
 
 
@@ -75,5 +91,6 @@ def download_apk_data(google_play_url):
     for filename, url in data.items():
         logger.debug(f"downloading and saving file {filename} -- {url}")
         download_n_save(url, filename, package_path)
+    resize_images(package_path)
     logger.info(f"Saved the apk file and images in {package_name} folder.")
     return package_path, app_name
