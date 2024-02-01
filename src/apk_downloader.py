@@ -5,6 +5,8 @@ from pathlib import Path
 import os
 from logger import logger
 from PIL import Image
+from selenium.webdriver import Chrome
+from requests.exceptions import ChunkedEncodingError, ConnectionError
 
 
 WRK_DIR = Path(__file__).resolve().parents[1]
@@ -31,17 +33,23 @@ def search_apk(query):
     return soup.find("a", class_="first-info").get("href")
 
 
-def download_n_save(url, filename, save_path_dir):
+def download_n_save(url, filename, save_path_dir, retry=0):
+    logger.debug(f"downloading {url}")
     filepath = os.path.join(save_path_dir, filename)
 
     with requests.get(url, stream=True, allow_redirects=True, headers=headers) as req:
         if not req.ok:
             logger.error(f"unable to download {filename} file..")
             req.raise_for_status()
-        with open(filepath, "wb") as fp:
-            for data in req.iter_content(chunk_size=8192):
-                fp.write(data)
-
+        try:
+            with open(filepath, "wb") as fp:
+                for data in req.iter_content(chunk_size=8192):
+                    fp.write(data)
+        except ChunkedEncodingError:
+            if retry > 3:
+                raise ChunkedEncodingError(e)
+            logger.debug(f"Failed to get data from {url}, retrying {retry+1} time")
+            download_n_save(url, filename, save_path_dir, retry=retry+1)
     return filepath
 
 
@@ -55,8 +63,13 @@ def resize_images(img_dir):
             new_size = (1280, 720)
         else:
             new_size = (720, 1280)
-        resized_img = img.resize(new_size)
-        resized_img.save(image)
+        try:
+            resized_img = img.resize(new_size, Image.BICUBIC)
+            resized_img.save(image)
+        except Exception as e:
+            img.close()
+            logger.debug(f"error while resizing image. Error is ==> {str(e)}")
+            os.remove(image)
 
 
 def get_apk_image_urls(apk_page_url, package_name):
@@ -78,6 +91,17 @@ def get_apk_image_urls(apk_page_url, package_name):
     return data, app_name
 
 
+def get_apk_url_apkcombo(package_name):
+    driver = Chrome()
+    url = "https://apkcombo.com/autokill-sandbox/{package_name}/download/apk"
+    driver.get(url.format(package_name=package_name))
+    soup = BeautifulSoup(driver.page_source, "html.parser")
+    download_link = soup.find("a", class_="variant").get("href")
+    driver.close()
+    logger.debug(f"Extracted download url from apkcombo {download_link}")
+    return download_link
+
+
 def download_apk_data(google_play_url):
     logger.info(f"Downloading apk from {google_play_url}")
     package_name = get_package_name(google_play_url)
@@ -90,7 +114,16 @@ def download_apk_data(google_play_url):
     logger.debug(f"extracted all the apk data -- {data}")
     for filename, url in data.items():
         logger.debug(f"downloading and saving file {filename} -- {url}")
-        download_n_save(url, filename, package_path)
+
+        try:
+            download_n_save(url, filename, package_path)
+        except ConnectionError:
+            if not filename.endswith(".apk"):
+                raise ConnectionError
+            logger.debug("Attempting to download apk using alternate mirror site..")
+            url = get_apk_url_apkcombo(package_name)
+            download_n_save(url, filename, package_path)
+
     resize_images(package_path)
     logger.info(f"Saved the apk file and images in {package_name} folder.")
     return package_path, app_name
