@@ -1,3 +1,5 @@
+import time
+
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import parse_qsl, urlunparse, urlparse, urlencode
@@ -15,7 +17,8 @@ APK_DATA_PATH = os.path.join(WRK_DIR, "src", "apk_data")
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-                  "Chrome/89.0.4389.114 Safari/537.36"
+                  "Chrome/89.0.4389.114 Safari/537.36",
+    "referer": 'https://apkpure.net/'
 }
 session = requests.Session()
 session.headers = headers
@@ -45,7 +48,7 @@ def download_n_save(url, filename, save_path_dir, retry=0):
             with open(filepath, "wb") as fp:
                 for data in req.iter_content(chunk_size=8192):
                     fp.write(data)
-        except ChunkedEncodingError:
+        except ChunkedEncodingError as e:
             if retry > 3:
                 raise ChunkedEncodingError(e)
             logger.debug(f"Failed to get data from {url}, retrying {retry+1} time")
@@ -95,6 +98,7 @@ def get_apk_url_apkcombo(package_name):
     driver = Chrome()
     url = "https://apkcombo.com/autokill-sandbox/{package_name}/download/apk"
     driver.get(url.format(package_name=package_name))
+    time.sleep(5)
     soup = BeautifulSoup(driver.page_source, "html.parser")
     download_link = soup.find("a", class_="variant").get("href")
     driver.close()
@@ -127,3 +131,4 @@ def download_apk_data(google_play_url):
     resize_images(package_path)
     logger.info(f"Saved the apk file and images in {package_name} folder.")
     return package_path, app_name
+
