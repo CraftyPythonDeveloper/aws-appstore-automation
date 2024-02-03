@@ -7,3 +7,5 @@ python-dotenv==1.0.0
 google-generativeai==0.3.2
 amazoncaptcha==0.5.11
 pillow==9.5.0
+bs4
+openpyxl

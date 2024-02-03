@@ -5,7 +5,7 @@ from helium import start_chrome, kill_browser
 
 from apk_downloader import download_apk_data
 from utils import (login, create_new_app, create_app_page2, create_app_page3, create_app_page4, create_app_page5,
-                   random_sleep, STATIC_DATA)
+                   random_sleep, STATIC_DATA, )
 from logger import logger
 import google.generativeai as genai
 import warnings
@@ -28,6 +28,7 @@ if __name__ == "__main__":
     unique_usernames = config_df.username.unique()
 
     driver = start_chrome()
+    driver.maximize_window()
     logger.info("Started chrome driver, logging into amazon portal")
 
     for username in unique_usernames:

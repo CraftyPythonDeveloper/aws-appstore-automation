@@ -5,6 +5,7 @@ import time
 
 from helium import *
 from selenium.common import NoSuchElementException
+from selenium.common.exceptions import ElementClickInterceptedException
 from selenium.webdriver.common.by import By
 from datetime import datetime, timedelta
 from logger import logger
@@ -127,119 +128,147 @@ def login(driver, email, password, totp, retry=0):
         logger.debug("login success")
 
 
-def create_new_app(driver, app_name, app_category, app_sub_category):
+def create_new_app(driver, app_name, app_category, app_sub_category, retry=0):
     logger.debug(f"Creating new app {app_name}")
     driver.get(STATIC_DATA["create_new_app_url"])
     random_sleep()
 
-    write(app_name, into="App title")
-    random_sleep()
-
-    logger.debug(f"selecting category {app_category}")
-    click(S('//*[@id="categoryLevel"]'))
-    a = find_all(S(".sc-jIZahH.knFoqZ.sc-dwLEzm.ewuvWr"))[0]
-    options_div = a.web_element.find_element(By.CSS_SELECTOR, ".sc-fEOsli.XZUkw.sc-hHLeRK.sc-iAvgwm.fPVxMZ.fmariK")
-    for i in options_div.find_elements(By.CSS_SELECTOR, ".sc-cCsOjp.cbnA-Do"):
-        if i.text.lower() == app_category.lower():
-            logger.debug("found the element to select app category")
-            click(i)
-            break
-
-    if app_sub_category:
-        logger.debug(f"selecting sub category {app_sub_category}")
+    try:
+        write(app_name, into="App title")
         random_sleep()
-        click(S('//*[@id="subcategoryLevel"]'))
-        a = find_all(S(".sc-jIZahH.knFoqZ.sc-dwLEzm.ewuvWr"))[1]
+
+        logger.debug(f"selecting category {app_category}")
+        click(S('//*[@id="categoryLevel"]'))
+        a = find_all(S(".sc-jIZahH.knFoqZ.sc-dwLEzm.ewuvWr"))[0]
         options_div = a.web_element.find_element(By.CSS_SELECTOR, ".sc-fEOsli.XZUkw.sc-hHLeRK.sc-iAvgwm.fPVxMZ.fmariK")
         for i in options_div.find_elements(By.CSS_SELECTOR, ".sc-cCsOjp.cbnA-Do"):
-            if i.text.lower() == app_sub_category.lower():
-                logger.debug("Found the element to select app sub category")
-                i.click()
+            if i.text.lower() == app_category.lower():
+                logger.debug("found the element to select app category")
+                click(i)
+                break
 
-    random_sleep()
-    click("Save")
-    logger.debug("Saved")
-    random_sleep(min_=3, max_=5)
-    if not driver.current_url.startswith("https://developer.amazon.com/apps-and-games/console/app/amzn1.devporta"):
-        logger.debug("Error occurred while submitting..")
-        raise AttributeError("Error occurred while submitting..")
+        if app_sub_category:
+            logger.debug(f"selecting sub category {app_sub_category}")
+            random_sleep()
+            click(S('//*[@id="subcategoryLevel"]'))
+            a = find_all(S(".sc-jIZahH.knFoqZ.sc-dwLEzm.ewuvWr"))[1]
+            options_div = a.web_element.find_element(By.CSS_SELECTOR, ".sc-fEOsli.XZUkw.sc-hHLeRK.sc-iAvgwm.fPVxMZ.fmariK")
+            for i in options_div.find_elements(By.CSS_SELECTOR, ".sc-cCsOjp.cbnA-Do"):
+                if i.text.lower() == app_sub_category.lower():
+                    logger.debug("Found the element to select app sub category")
+                    i.click()
+
+        random_sleep()
+        click("Save")
+        logger.debug("Saved")
+        random_sleep(min_=3, max_=5)
+        if not driver.current_url.startswith("https://developer.amazon.com/apps-and-games/console/app/amzn1.devporta"):
+            logger.debug("Error occurred while submitting..")
+            raise AttributeError("Error occurred while submitting..")
+        try:
+            click("Looks Great")
+        except LookupError:
+            logger.error("Looks Great button not found, skipping to click..")
+        return True
+    except LookupError as e:
+        if retry > 3:
+            raise LookupError
+        logger.error(f"Lookup error occurred, retrying {retry} again to create an app.")
+        logger.debug(f"Error is {e}")
+        driver.refresh()
+        create_new_app(driver, app_name, app_category, app_sub_category, retry+1)
+
+
+def create_app_page2(driver, static_path, game_features, language_support, retry=0):
     try:
-        click("Looks Great")
-    except LookupError:
-        logger.debug("Unable to find looks great button..")
-    return True
+        apk_filepath = get_static_filepath(static_path)["apk_filepath"]
+        logger.debug(f"apk filepath {apk_filepath}")
+        random_sleep()
+        for i in driver.find_elements(By.XPATH, '//*[@id="app-submissions-root"]//input'):
+            if i.get_attribute("type") == "file":
+                logger.debug("Uploading apk file")
+                attach_file(apk_filepath, to=i)
+
+        random_sleep()
+        for lang in find_all(S(".orientation-right.css-z7vmfr", above="Language Support")):
+            if lang.web_element.text == game_features:
+                logger.debug(f"selecting game features to {game_features}")
+                lang.web_element.click()
+                break
+
+        random_sleep()
+        for lang in find_all(S(".orientation-right.css-z7vmfr", below="Language Support")):
+            if lang.web_element.text == language_support:
+                logger.debug(f"selecting supported language to {game_features}")
+                lang.web_element.click()
+                break
+
+        logger.debug("Waiting for apk file to be uploaded.")
+        for i in range(300):
+            if find_all(S("//h5[text()='1 file(s) uploaded']")):
+                logger.debug("Apk file uploaded..")
+                break
+            elif find_all(S(".react-toast-notifications__toast__content.css-1ad3zal")):
+                raise AttributeError("Apk file already uploaded or amazon rejected. Skipping the current app..")
+            random_sleep(min_=1, max_=2)
+
+        random_sleep()
+        # click(S("//label[@class='orientation-right css-qbmcu0']//span[text()='No']"))     # DRM No
+        click(S("//label[@class='orientation-right css-qbmcu0']//span[text()='Yes']"))      # DRM Yes
+
+        random_sleep()
+        driver.execute_script(STATIC_DATA["scroll_top_query"])
+        random_sleep()
+        driver.find_element(By.XPATH, "//button[text() = 'Next']").click()
+        logger.debug("Clicked on Next button..")
+    except LookupError as e:
+        if retry > 3:
+            raise LookupError
+        logger.error(f"Lookup error occurred, retrying {retry} again page 2")
+        logger.debug(f"Error is {e}")
+        driver.refresh()
+        create_app_page2(driver, static_path, game_features, language_support, retry=0)
 
 
-def create_app_page2(driver, static_path, game_features, language_support):
-    apk_filepath = get_static_filepath(static_path)["apk_filepath"]
-    logger.debug(f"apk filepath {apk_filepath}")
-    random_sleep()
-    for i in driver.find_elements(By.XPATH, '//*[@id="app-submissions-root"]//input'):
-        if i.get_attribute("type") == "file":
-            logger.debug("Uploading apk file")
-            attach_file(apk_filepath, to=i)
+def create_app_page3(driver, retry=0):
+    try:
+        logger.debug("filling details to page 3")
+        random_sleep()
+        # driver.find_element(By.XPATH, '//*[@id="target-audience-radio-group"]//input[@value="all"]').click()  # all age group
+        driver.find_element(By.XPATH, "//input[@id='16-17 years of age']").click()     # check 16-17 age group
+        random_sleep()
+        driver.find_element(By.XPATH, '//input[@id="18+ years of age"]').click()    # check 18+ age group
+        random_sleep()
+        driver.find_element(By.XPATH, "//input[@name='collectPrivacyLabel'][@value='no']").click()
 
-    random_sleep()
-    for lang in find_all(S(".orientation-right.css-z7vmfr", above="Language Support")):
-        if lang.web_element.text == game_features:
-            logger.debug(f"selecting game features to {game_features}")
-            lang.web_element.click()
-            break
+        random_sleep()
+        click("View questionnaire")
+        random_sleep()
+        for i in driver.find_elements(By.XPATH, "//input[@aria-label='None' or @aria-label='No']"):
+            i.click()
+            time.sleep(0.5)
 
-    random_sleep()
-    for lang in find_all(S(".orientation-right.css-z7vmfr", below="Language Support")):
-        if lang.web_element.text == language_support:
-            logger.debug(f"selecting supported language to {game_features}")
-            lang.web_element.click()
-            break
+        try:
+            random_sleep(min_=2, max_=5)
+            scroll_up()
+            driver.find_element(By.NAME, "content-attenuating-element-academic").click()
+        except:
+            logger.error("element NO is not clickable..")
+        time.sleep(1)
+        press(ESCAPE)
+        random_sleep()
 
-    logger.debug("Waiting for apk file to be uploaded.")
-    for i in range(300):
-        if find_all(S("//h5[text()='1 file(s) uploaded']")):
-            logger.debug("Apk file uploaded..")
-            break
-        elif find_all(S(".react-toast-notifications__toast__content.css-1ad3zal")):
-            raise AttributeError("Apk file already uploaded or amazon rejected. Skipping the current app..")
-        random_sleep(min_=1, max_=2)
-
-    random_sleep()
-    # click(S("//label[@class='orientation-right css-qbmcu0']//span[text()='No']"))     # DRM No
-    click(S("//label[@class='orientation-right css-qbmcu0']//span[text()='Yes']"))      # DRM Yes
-
-    random_sleep()
-    driver.execute_script(STATIC_DATA["scroll_top_query"])
-    random_sleep()
-    driver.find_element(By.XPATH, "//button[text() = 'Next']").click()
-    logger.debug("Clicked on Next button..")
-
-
-def create_app_page3(driver):
-    logger.debug("filling details to page 3")
-    random_sleep()
-    # driver.find_element(By.XPATH, '//*[@id="target-audience-radio-group"]//input[@value="all"]').click()  # all age group
-    driver.find_element(By.XPATH, "//input[@id='16-17 years of age']").click()     # check 16-17 age group
-    random_sleep()
-    driver.find_element(By.XPATH, '//input[@id="18+ years of age"]').click()    # check 18+ age group
-    random_sleep()
-    driver.find_element(By.XPATH, "//input[@name='collectPrivacyLabel'][@value='no']").click()
-
-    random_sleep()
-    click("View questionnaire")
-    random_sleep()
-    for i in driver.find_elements(By.XPATH, "//input[@aria-label='None' or @aria-label='No']"):
-        i.click()
-        time.sleep(0.5)
-
-    random_sleep(min_=2, max_=5)
-    driver.find_element(By.NAME, "content-attenuating-element-academic").click()
-    time.sleep(1)
-    press(ESCAPE)
-    random_sleep()
-
-    driver.execute_script(STATIC_DATA["scroll_top_query"])
-    random_sleep()
-    driver.find_element(By.XPATH, "//button[text() = 'Next']").click()
-    logger.debug("Completed page 3")
+        driver.execute_script(STATIC_DATA["scroll_top_query"])
+        random_sleep()
+        driver.find_element(By.XPATH, "//button[text() = 'Next']").click()
+        logger.debug("Completed page 3")
+    except LookupError as e:
+        if retry > 3:
+            raise LookupError
+        logger.error(f"Lookup error occurred, retrying {retry} again to page 3")
+        logger.debug(f"Error is {e}")
+        driver.refresh()
+        create_app_page3(driver, retry+1)
 
 
 def contains_in(text, lst):
@@ -265,6 +294,7 @@ def create_app_page4(driver, model, app_name, app_category, app_sub_category, st
     write(data["keywords"], into="Add keywords")
     random_sleep()
 
+    scroll_down(200)
     form = None
     for form in find_all(S("form")):
         h3 = form.web_element.find_element(By.TAG_NAME, "h3")
@@ -342,10 +372,13 @@ def create_app_page5(driver):
             menus[i].click()
             logger.debug(f"Clicked {i} menu")
             random_sleep(min_=2)
-    logger.debug("Clicking on submit button..")
-    submit_button = driver.find_element(By.XPATH, '//button[text()="Submit App"]')
-    submit_button.click()
-    logger.debug("App submitted..")
+    try:
+        logger.debug("Clicking on submit button..")
+        submit_button = driver.find_element(By.XPATH, '//button[text()="Submit App"]')
+        submit_button.click()
+        logger.debug("App submitted..")
+    except ElementClickInterceptedException:
+        logger.error("App submit button is not clickable..")
 
 
 def get_menu_elements(driver):

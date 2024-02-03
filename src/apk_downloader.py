@@ -1,4 +1,5 @@
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 import requests
 from bs4 import BeautifulSoup
@@ -50,7 +51,9 @@ def download_n_save(url, filename, save_path_dir, retry=0):
                     fp.write(data)
         except ChunkedEncodingError as e:
             if retry > 3:
-                raise ChunkedEncodingError(e)
+                os.remove(filepath)
+                logger.debug(f"unable to download from {url} after retrying 3 times.")
+                return ""
             logger.debug(f"Failed to get data from {url}, retrying {retry+1} time")
             download_n_save(url, filename, save_path_dir, retry=retry+1)
     return filepath
@@ -116,19 +119,27 @@ def download_apk_data(google_play_url):
     package_url = search_apk(package_name)
     data, app_name = get_apk_image_urls(package_url, package_name)
     logger.debug(f"extracted all the apk data -- {data}")
-    for filename, url in data.items():
-        logger.debug(f"downloading and saving file {filename} -- {url}")
+    # for filename, url in data.items():
 
-        try:
-            download_n_save(url, filename, package_path)
-        except ConnectionError:
-            if not filename.endswith(".apk"):
-                raise ConnectionError
-            logger.debug("Attempting to download apk using alternate mirror site..")
-            url = get_apk_url_apkcombo(package_name)
-            download_n_save(url, filename, package_path)
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        executor.map(download_helper, data.keys(), data.values(), [package_name]*len(data.keys()))
 
     resize_images(package_path)
     logger.info(f"Saved the apk file and images in {package_name} folder.")
     return package_path, app_name
 
+
+def download_helper(url, filename, package_path, package_name):
+    """
+    a helper function to make downloading process run in thread
+    """
+    logger.debug(f"downloading and saving file {filename} -- {url}")
+
+    try:
+        download_n_save(url, filename, package_path)
+    except ConnectionError:
+        if not filename.endswith(".apk"):
+            raise ConnectionError
+        logger.debug("Attempting to download apk using alternate mirror site..")
+        url = get_apk_url_apkcombo(package_name)
+        download_n_save(url, filename, package_path)
