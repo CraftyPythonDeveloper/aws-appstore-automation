@@ -5,7 +5,6 @@ import time
 
 from helium import *
 from selenium.common import NoSuchElementException
-from selenium.common.exceptions import ElementClickInterceptedException
 from selenium.webdriver.common.by import By
 from datetime import datetime, timedelta
 from logger import logger
@@ -45,8 +44,12 @@ def get_static_filepath(static_path):
     """
     icon_512px = os.path.join(static_path, "Icon image_icon_512.png")
     icon_114px = os.path.join(static_path, "Icon image_icon_114.png")
-    apk_filepath = [os.path.join(static_path, i) for i in os.listdir(static_path) if i.endswith(".apk")][0]
-    screenshots = [os.path.join(static_path, i) for i in os.listdir(static_path) if i.startswith("Screenshot ")]
+    try:
+        apk_filepath = [os.path.join(static_path, i) for i in os.listdir(static_path) if i.endswith(".apk")][0]
+        screenshots = [os.path.join(static_path, i) for i in os.listdir(static_path) if i.startswith("Screenshot ")]
+    except IndexError:
+        logger.error("Apk file not found.. skipping..")
+        raise IndexError
     data = {"icon_512": icon_512px, "icon_114": icon_114px,
             "screenshots_img": "\n".join(screenshots), "apk_filepath": apk_filepath}
     if not icon_114px and icon_512px and apk_filepath and screenshots:
@@ -294,7 +297,6 @@ def create_app_page4(driver, model, app_name, app_category, app_sub_category, st
     write(data["keywords"], into="Add keywords")
     random_sleep()
 
-    scroll_down(200)
     form = None
     for form in find_all(S("form")):
         h3 = form.web_element.find_element(By.TAG_NAME, "h3")
@@ -372,13 +374,15 @@ def create_app_page5(driver):
             menus[i].click()
             logger.debug(f"Clicked {i} menu")
             random_sleep(min_=2)
+
     try:
         logger.debug("Clicking on submit button..")
         submit_button = driver.find_element(By.XPATH, '//button[text()="Submit App"]')
         submit_button.click()
         logger.debug("App submitted..")
-    except ElementClickInterceptedException:
-        logger.error("App submit button is not clickable..")
+    except Exception as e:
+        logger.error("App Submit button not clickable..")
+        logger.debug(f"Exception is {e}")
 
 
 def get_menu_elements(driver):
