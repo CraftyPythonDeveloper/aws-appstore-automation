@@ -1,6 +1,6 @@
 import re
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 
 import requests
 from bs4 import BeautifulSoup
@@ -13,7 +13,7 @@ from selenium.webdriver import Chrome, ChromeOptions
 from requests.exceptions import ChunkedEncodingError, ConnectionError
 from pypdl import Downloader
 
-
+requests.packages.urllib3.disable_warnings()
 WRK_DIR = Path(__file__).resolve().parents[1]
 APK_DATA_PATH = os.path.join(WRK_DIR, "src", "apk_data")
 py_downloader = Downloader()
@@ -33,17 +33,17 @@ def get_chrome_driver(headless=False):
 
 
 def get_play_screenshots(play_url):
-    response = requests.get(play_url, headers=headers)
+    response = requests.get(play_url, headers=headers, verify=False)
     soup = BeautifulSoup(response.text, "html.parser")
     try:
         name = soup.find("h1", {"itemprop": "name"}).text
-        urls = dict()
+        urls = {"app_name": name}
         for url_soup in soup.find("div", {"jsname": "K9a4Re"}).find_all("img"):
             if len(urls) >= 9:
                 break
             urls[f"Screenshot {len(urls)}.png"] = url_soup.get("src").split("=")[0]
-        print(name, urls)
-        return name, urls
+        # print(name, urls)
+        return urls
     except AttributeError:
         return False
 
@@ -53,26 +53,37 @@ def get_package_name(google_play_url):
     return parse_qsl(google_play_url)[0][1]
 
 
-ch_driver = get_chrome_driver()
+def get_apkpure_dl(play_url):
+    base_url = f"https://d.apkpure.net/b/APK/{get_package_name(play_url)}?version=latest"
+    res = requests.head(base_url, verify=False)
+    return res.headers["Location"]
+
 
 def get_apk_url(play_url):
     pattern = r'/([^/]+)/$'
     package_name = get_package_name(play_url)
-    try:
-        search_url = f"https://apkcombo.com/search?q={package_name}"
-        ch_driver.get(search_url)
-        match = re.search(pattern, ch_driver.current_url)
-        if match:
-            download_url = f"https://apkcombo.com/{match.group(0)}/{package_name}/download/apk"
-            ch_driver.get(download_url)
+    url = get_apkpure_dl(play_url)
+    if "winudf.com" in url:
+        return url
+    else:
+        ch_driver = get_chrome_driver()
+        try:
+            search_url = f"https://apkcombo.com/search?q={package_name}"
+            ch_driver.get(search_url)
             time.sleep(5)
-            soup = BeautifulSoup(ch_driver.page_source, "html.parser")
-            download_link = soup.find("a", class_="variant").get("href")
-            return download_link
-        raise AttributeError
-    except Exception as e:
-        print(e)
-        return f"https://d.apkpure.net/b/APK/{package_name}?version=latest"
+            match = re.search(pattern, ch_driver.current_url)
+            if match:
+                download_url = f"https://apkcombo.com/{match.group(0)}/{package_name}/download/apk"
+                ch_driver.get(download_url)
+                time.sleep(5)
+                soup = BeautifulSoup(ch_driver.page_source, "html.parser")
+                download_link = soup.find("a", class_="variant").get("href")
+                ch_driver.close()
+                return download_link
+        except Exception as e:
+            print(e)
+            ch_driver.close()
+        return False
 
 
 play_urls = """https://play.google.com/store/apps/details?id=com.falcon.flying.TheEagleSimulator
@@ -126,10 +137,91 @@ https://play.google.com/store/apps/details?id=com.parking.monster.truck
 https://play.google.com/store/apps/details?id=com.parking.pickup.truck""".split("\n")
 
 
-download_url = []
+def resize_images(img_dir):
+    imgs = [os.path.join(img_dir, file) for file in os.listdir(img_dir) if file.endswith(".png") and "Icon" not in file]
+
+    for image in imgs:
+        img = Image.open(image)
+        width, height = img.size
+        if width > height:
+            new_size = (1280, 720)
+        else:
+            new_size = (720, 1280)
+        try:
+            resized_img = img.resize(new_size, Image.BICUBIC)
+            resized_img.save(image)
+        except Exception as e:
+            img.close()
+            logger.debug(f"error while resizing image. Error is ==> {str(e)}")
+            os.remove(image)
+
+
+def download_apk_data(google_play_url):
+    logger.info(f"Downloading apk from {google_play_url}")
+    package_name = get_package_name(google_play_url)
+    logger.debug(f"Extracted the package name {package_name}")
+    package_path = os.path.join(APK_DATA_PATH, package_name)
+    if not os.path.exists(package_path):
+        os.mkdir(package_path)
+    data = get_play_screenshots(google_play_url)
+    logger.debug(f"extracted all the apk data -- {data}")
+    apk_dl = get_apk_url(google_play_url)
+    if not apk_dl:
+        os.rmdir(package_path)
+        return False
+    data[f"{''.join(e for e in data['app_name'] if e.isalnum())}.apk"] = apk_dl
+    # data["meta"] = {"package_path": package_path, "package_name": package_name, "app_name": data.pop("app_name")}
+    # meta = data.pop("meta")
+    app_name = data.pop("app_name")
+    for filename, url in data.items():
+        download_n_save(url, filename, package_path)
+    resize_images(package_path)
+    return app_name, package_path
+
+    #
+    # results = exe.map(download_n_save, data.values(), data.keys(), [meta["package_path"]] * len(data))
+    # list(results)
+
+    # return data
+
+
+def download_n_save(url, filename, save_path_dir, retry = 0):
+    logger.debug(f"downloading {url}")
+    filepath = os.path.join(save_path_dir, filename)
+
+    with requests.get(url, stream=True, headers=headers, verify=False) as req:
+        if not req.ok:
+            logger.error(f"unable to download {filename} file..")
+            req.raise_for_status()
+        try:
+            with open(filepath, "wb") as fp:
+                for data in req.iter_content(chunk_size=8192):
+                    fp.write(data)
+        except ChunkedEncodingError as e:
+            if retry > 1:
+                os.remove(filepath)
+                logger.debug(f"unable to download from {url} after retrying {retry} times.")
+                return ""
+            logger.debug(f"Failed to get data from {url}, retrying {retry+1} time")
+            download_n_save(url, filename, save_path_dir, retry=retry+1)
+    return filepath
+
+
+
+#
+# with ThreadPoolExecutor(max_workers=5) as exe:
+#     for i in play_urls[:10]:
+#         data = download_apk_data(i)
+#         if not data:
+#             print("No data for ", i)
+#             continue
+#
+#         meta = data.pop("meta")
+#         results = exe.map(download_n_save, data.values(), data.keys(), [meta["package_path"]]*len(data))
+#         list(results)
+
+
 for i in play_urls:
-    download_url.append(get_apk_url(i))
-
-print(download_url)
-
-ch_driver.close()
+    print(f"downloading {i}")
+    download_apk_data(i)
+    print(f"Done downloading {i}")
