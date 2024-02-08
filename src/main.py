@@ -3,7 +3,7 @@ import pandas as pd
 from dotenv import load_dotenv
 from helium import start_chrome, kill_browser
 
-from apk_downloader import download_apk_data
+from apk_downloader_v2 import download_apk_data
 from utils import (login, create_new_app, create_app_page2, create_app_page3, create_app_page4, create_app_page5,
                    random_sleep, STATIC_DATA, )
 from logger import logger
