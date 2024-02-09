@@ -38,6 +38,10 @@ def get_play_screenshots(play_url):
     try:
         name = soup.find("h1", {"itemprop": "name"}).text
         urls = {"app_name": name}
+        icon_img_url = soup.find("img", {"alt": "Icon image"}).get("src").split("=")[0]
+        # "https://play-lh.googleusercontent.com/KxeSAjPTKliCErbivNiXrd6cTwfbqUJcbSRPe_IBVK_YmwckfMRS1VIHz-5cgT09yMo=w114-h114-rw"
+        urls["Icon image_icon_114.png"] = icon_img_url + "=w114-h114-rp"
+        urls["Icon image_icon_512.png"] = icon_img_url + "=w512-h512-rp"
         for url_soup in soup.find("div", {"jsname": "K9a4Re"}).find_all("img"):
             if len(urls) >= 9:
                 break
@@ -118,14 +122,14 @@ def download_apk_data(google_play_url):
     if not apk_dl:
         os.rmdir(package_path)
         return False
-    data[f"{''.join(e for e in data['app_name'] if e.isalnum())}.apk"] = apk_dl
     # data["meta"] = {"package_path": package_path, "package_name": package_name, "app_name": data.pop("app_name")}
     # meta = data.pop("meta")
     app_name = data.pop("app_name")
+    data[f"{''.join(e for e in app_name if e.isalnum())}.apk"] = apk_dl
     for filename, url in data.items():
         download_n_save(url, filename, package_path)
     resize_images(package_path)
-    return app_name, package_path
+    return package_path, app_name
 
     #
     # results = exe.map(download_n_save, data.values(), data.keys(), [meta["package_path"]] * len(data))
