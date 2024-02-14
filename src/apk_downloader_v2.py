@@ -81,8 +81,11 @@ def get_apk_url(play_url):
                 ch_driver.get(download_url)
                 time.sleep(5)
                 soup = BeautifulSoup(ch_driver.page_source, "html.parser")
-                download_link = soup.find("a", class_="variant").get("href")
                 ch_driver.close()
+                apk_type = soup.find("ul", {"class": "file-list"}).find("span", {"class": "vtype"}).text
+                if apk_type == "XAPK":
+                    raise ValueError("APK type is XAPK, Skipping downloading..")
+                download_link = soup.find("a", class_="variant").get("href")
                 return download_link
         except Exception as e:
             print(e)
