@@ -24,8 +24,9 @@ STATIC_DATA = {
 
 }
 prompt = """You are an android app description suggestion agent and your job is to generate short description, 
-            long description and short feature description of android app by using below provided details and make sure to use 
-            response format as reference to provide response in the same key value pair, the key name should be strictly followed. 
+            long description and short feature description of android app by using below provided details and make sure
+             to use response format as reference to provide response in the same key value pair, the key name should be
+              strictly followed. 
             ### details App Name: {app_name} App Categorie: {app_cat} App Sub Categorie: {app_sub_cat}
 
             ### Response format
@@ -216,8 +217,11 @@ def create_app_page2(driver, static_path, game_features, language_support, retry
             random_sleep(min_=1, max_=2)
 
         random_sleep()
-        # click(S("//label[@class='orientation-right css-qbmcu0']//span[text()='No']"))     # DRM No
-        click(S("//label[@class='orientation-right css-qbmcu0']//span[text()='Yes']"))      # DRM Yes
+        try:
+            # click(S("//label[@class='orientation-right css-qbmcu0']//span[text()='No']"))     # DRM No
+            click(S("//label[@class='orientation-right css-qbmcu0']//span[text()='Yes']"))      # DRM Yes
+        except:
+            logger.info("DRM has no radio button..")
 
         random_sleep()
         driver.execute_script(STATIC_DATA["scroll_top_query"])

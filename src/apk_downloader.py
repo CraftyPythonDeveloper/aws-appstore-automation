@@ -177,57 +177,56 @@ def download_helper(url, filename, package_path, package_name):
         download_n_save(url, filename, package_path)
     return True
 
-
-
-play_urls = """https://play.google.com/store/apps/details?id=com.falcon.flying.TheEagleSimulator
-https://play.google.com/store/apps/details?id=com.flying.squirrel.SquirrelSimulatorGame
-https://play.google.com/store/apps/details?id=com.mane.jungle.hunter.FoxSimulator
-https://play.google.com/store/apps/details?id=com.Hunter.world.KomodoDragonHuntingGame
-https://play.google.com/store/apps/details?id=com.Sea.Queen.MermaidSimulatorGame
-https://play.google.com/store/apps/details?id=com.Hungry.Wild.CrocodileSimulator
-https://play.google.com/store/apps/details?id=com.Warthog.predator.hunter.PigSavannaWarthogGame
-https://play.google.com/store/apps/details?id=com.Hunting.hot.jungle.BearhuntSimulator
-https://play.google.com/store/apps/details?id=com.Hunter.Mane.TheWolfSimulator
-https://play.google.com/store/apps/details?id=com.Insect.worm.SpiderSimulator
-https://play.google.com/store/apps/details?id=com.Reptile.Venom.ScorpionSimulator
-https://play.google.com/store/apps/details?id=com.Anaconda.Cobra.Ratle.SnakeSimulator
-https://play.google.com/store/apps/details?id=com.Insect.Bug.AntSimulator
-https://play.google.com/store/apps/details?id=com.bowandarrow.robbinhood.ArcheryMaster3D
-https://play.google.com/store/apps/details?id=com.Xclusive.Pony.pet.FlyingUnicornSimulator
-https://play.google.com/store/apps/details?id=com.rebirth.dragonhunt.DeadlyDragonRevengeSim
-https://play.google.com/store/apps/details?id=com.King.Hunter.InsectoidCrabMonster
-https://play.google.com/store/apps/details?id=com.Flying.Vampire.DuckSimulatorJungleGame
-https://play.google.com/store/apps/details?id=com.Pridator.Aquatic.Swim.PiranhaUnderwaterGame
-https://play.google.com/store/apps/details?id=com.parking.police.car
-https://play.google.com/store/apps/details?id=com.parking.prado
-https://play.google.com/store/apps/details?id=com.parking.oil.transport.truck
-https://play.google.com/store/apps/details?id=com.parking.army.truck
-https://play.google.com/store/apps/details?id=com.parking.buggy
-https://play.google.com/store/apps/details?id=com.parking.crane.construction.truck
-https://play.google.com/store/apps/details?id=com.parking.formula.car
-https://play.google.com/store/apps/details?id=com.parking.emergency.ambulance.parking
-https://play.google.com/store/apps/details?id=com.parking.hummer.prado
-https://play.google.com/store/apps/details?id=com.parking.car.game
-https://play.google.com/store/apps/details?id=com.parking.jeep
-https://play.google.com/store/apps/details?id=com.parking.limousine.car
-https://play.google.com/store/apps/details?id=com.parking.cargo.truck
-https://play.google.com/store/apps/details?id=com.parking.transport.truck
-https://play.google.com/store/apps/details?id=com.parking.ferrari
-https://play.google.com/store/apps/details?id=com.parking.tuktuk.auto.rickshaw
-https://play.google.com/store/apps/details?id=com.parking.tanks
-https://play.google.com/store/apps/details?id=com.parking.american.police.van.driving
-https://play.google.com/store/apps/details?id=com.parking.dump.truck
-https://play.google.com/store/apps/details?id=com.parking.forklift.extreme
-https://play.google.com/store/apps/details?id=com.parking.taxi.cab
-https://play.google.com/store/apps/details?id=com.parking.log.transporter.truck
-https://play.google.com/store/apps/details?id=com.parking.tractor
-https://play.google.com/store/apps/details?id=com.parking.fire.fighter.truck
-https://play.google.com/store/apps/details?id=com.parking.bus
-https://play.google.com/store/apps/details?id=com.parking.euro.truck
-https://play.google.com/store/apps/details?id=com.parking.quad.bike
-https://play.google.com/store/apps/details?id=com.parking.police.bus
-https://play.google.com/store/apps/details?id=com.parking.monster.truck
-https://play.google.com/store/apps/details?id=com.parking.pickup.truck""".split("\n")
-
-for i in play_urls:
-    download_apk_data(i)
+#  below code is for Testing
+# play_urls = """https://play.google.com/store/apps/details?id=com.falcon.flying.TheEagleSimulator
+# https://play.google.com/store/apps/details?id=com.flying.squirrel.SquirrelSimulatorGame
+# https://play.google.com/store/apps/details?id=com.mane.jungle.hunter.FoxSimulator
+# https://play.google.com/store/apps/details?id=com.Hunter.world.KomodoDragonHuntingGame
+# https://play.google.com/store/apps/details?id=com.Sea.Queen.MermaidSimulatorGame
+# https://play.google.com/store/apps/details?id=com.Hungry.Wild.CrocodileSimulator
+# https://play.google.com/store/apps/details?id=com.Warthog.predator.hunter.PigSavannaWarthogGame
+# https://play.google.com/store/apps/details?id=com.Hunting.hot.jungle.BearhuntSimulator
+# https://play.google.com/store/apps/details?id=com.Hunter.Mane.TheWolfSimulator
+# https://play.google.com/store/apps/details?id=com.Insect.worm.SpiderSimulator
+# https://play.google.com/store/apps/details?id=com.Reptile.Venom.ScorpionSimulator
+# https://play.google.com/store/apps/details?id=com.Anaconda.Cobra.Ratle.SnakeSimulator
+# https://play.google.com/store/apps/details?id=com.Insect.Bug.AntSimulator
+# https://play.google.com/store/apps/details?id=com.bowandarrow.robbinhood.ArcheryMaster3D
+# https://play.google.com/store/apps/details?id=com.Xclusive.Pony.pet.FlyingUnicornSimulator
+# https://play.google.com/store/apps/details?id=com.rebirth.dragonhunt.DeadlyDragonRevengeSim
+# https://play.google.com/store/apps/details?id=com.King.Hunter.InsectoidCrabMonster
+# https://play.google.com/store/apps/details?id=com.Flying.Vampire.DuckSimulatorJungleGame
+# https://play.google.com/store/apps/details?id=com.Pridator.Aquatic.Swim.PiranhaUnderwaterGame
+# https://play.google.com/store/apps/details?id=com.parking.police.car
+# https://play.google.com/store/apps/details?id=com.parking.prado
+# https://play.google.com/store/apps/details?id=com.parking.oil.transport.truck
+# https://play.google.com/store/apps/details?id=com.parking.army.truck
+# https://play.google.com/store/apps/details?id=com.parking.buggy
+# https://play.google.com/store/apps/details?id=com.parking.crane.construction.truck
+# https://play.google.com/store/apps/details?id=com.parking.formula.car
+# https://play.google.com/store/apps/details?id=com.parking.emergency.ambulance.parking
+# https://play.google.com/store/apps/details?id=com.parking.hummer.prado
+# https://play.google.com/store/apps/details?id=com.parking.car.game
+# https://play.google.com/store/apps/details?id=com.parking.jeep
+# https://play.google.com/store/apps/details?id=com.parking.limousine.car
+# https://play.google.com/store/apps/details?id=com.parking.cargo.truck
+# https://play.google.com/store/apps/details?id=com.parking.transport.truck
+# https://play.google.com/store/apps/details?id=com.parking.ferrari
+# https://play.google.com/store/apps/details?id=com.parking.tuktuk.auto.rickshaw
+# https://play.google.com/store/apps/details?id=com.parking.tanks
+# https://play.google.com/store/apps/details?id=com.parking.american.police.van.driving
+# https://play.google.com/store/apps/details?id=com.parking.dump.truck
+# https://play.google.com/store/apps/details?id=com.parking.forklift.extreme
+# https://play.google.com/store/apps/details?id=com.parking.taxi.cab
+# https://play.google.com/store/apps/details?id=com.parking.log.transporter.truck
+# https://play.google.com/store/apps/details?id=com.parking.tractor
+# https://play.google.com/store/apps/details?id=com.parking.fire.fighter.truck
+# https://play.google.com/store/apps/details?id=com.parking.bus
+# https://play.google.com/store/apps/details?id=com.parking.euro.truck
+# https://play.google.com/store/apps/details?id=com.parking.quad.bike
+# https://play.google.com/store/apps/details?id=com.parking.police.bus
+# https://play.google.com/store/apps/details?id=com.parking.monster.truck
+# https://play.google.com/store/apps/details?id=com.parking.pickup.truck""".split("\n")
+#
+# for i in play_urls:
+#     download_apk_data(i)
