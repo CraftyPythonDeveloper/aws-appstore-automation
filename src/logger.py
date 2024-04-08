@@ -10,13 +10,13 @@ logger.setLevel(logging.DEBUG)  # Set the logging level to DEBUG
 
 # File Handler
 file_handler = logging.FileHandler(log_file_path)
-file_formatter = logging.Formatter('%(asctime)s - %(levelname)s: %(message)s')
+file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s')
 file_handler.setFormatter(file_formatter)
 logger.addHandler(file_handler)
 
 # Console Handler
 console_handler = logging.StreamHandler()
-console_formatter = logging.Formatter('%(asctime)s - %(levelname)s: %(message)s')
+console_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s')
 console_handler.setFormatter(console_formatter)
-console_handler.setLevel(logging.DEBUG)  # Set the console logging level to INFO
+console_handler.setLevel(logging.INFO)  # Set the console logging level to INFO
 logger.addHandler(console_handler)

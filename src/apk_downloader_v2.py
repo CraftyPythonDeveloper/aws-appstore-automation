@@ -1,22 +1,18 @@
 import re
 import time
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
-
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import parse_qsl, urlunparse, urlparse, urlencode
+from urllib.parse import parse_qsl
 from pathlib import Path
 import os
 from logger import logger
 from PIL import Image
 from selenium.webdriver import Chrome, ChromeOptions
-from requests.exceptions import ChunkedEncodingError, ConnectionError
-from pypdl import Downloader
+from requests.exceptions import ChunkedEncodingError
 
 requests.packages.urllib3.disable_warnings()
 WRK_DIR = Path(__file__).resolve().parents[1]
 APK_DATA_PATH = os.path.join(WRK_DIR, "src", "apk_data")
-py_downloader = Downloader()
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
                   "Chrome/89.0.4389.114 Safari/537.36",
@@ -121,27 +117,19 @@ def download_apk_data(google_play_url):
         os.mkdir(package_path)
     data = get_play_screenshots(google_play_url)
     logger.debug(f"extracted all the apk data -- {data}")
-    apk_dl = get_apk_url(google_play_url)
-    if not apk_dl:
-        os.rmdir(package_path)
-        return False
-    # data["meta"] = {"package_path": package_path, "package_name": package_name, "app_name": data.pop("app_name")}
-    # meta = data.pop("meta")
+    # apk_dl = get_apk_url(google_play_url)
+    # if not apk_dl:
+    #     os.rmdir(package_path)
+    #     return False
     app_name = data.pop("app_name")
-    data[f"{''.join(e for e in app_name if e.isalnum())}.apk"] = apk_dl
+    # data[f"{''.join(e for e in app_name if e.isalnum())}.apk"] = apk_dl
     for filename, url in data.items():
         download_n_save(url, filename, package_path)
     resize_images(package_path)
     return package_path, app_name
 
-    #
-    # results = exe.map(download_n_save, data.values(), data.keys(), [meta["package_path"]] * len(data))
-    # list(results)
 
-    # return data
-
-
-def download_n_save(url, filename, save_path_dir, retry = 0):
+def download_n_save(url, filename, save_path_dir, retry=0):
     logger.debug(f"downloading {url}")
     filepath = os.path.join(save_path_dir, filename)
 
@@ -158,11 +146,12 @@ def download_n_save(url, filename, save_path_dir, retry = 0):
                 os.remove(filepath)
                 logger.debug(f"unable to download from {url} after retrying {retry} times.")
                 return ""
-            logger.debug(f"Failed to get data from {url}, retrying {retry+1} time")
-            download_n_save(url, filename, save_path_dir, retry=retry+1)
+            logger.debug(f"Failed to get data from {url}, retrying {retry + 1} time")
+            download_n_save(url, filename, save_path_dir, retry=retry + 1)
     return filepath
 
 
+# for test purpose.
 # play_urls = """https://play.google.com/store/apps/details?id=com.falcon.flying.TheEagleSimulator
 # https://play.google.com/store/apps/details?id=com.flying.squirrel.SquirrelSimulatorGame
 # https://play.google.com/store/apps/details?id=com.mane.jungle.hunter.FoxSimulator

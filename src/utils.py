@@ -2,14 +2,14 @@ import json
 import os.path
 import random
 import time
+from logger import logger
 
 from helium import *
 from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
-from datetime import datetime, timedelta
-from logger import logger
 from amazoncaptcha import AmazonCaptcha
 import pyotp
+from apk_automations.apk import TEMP_OUTPUT_DIR, compile_apk, decompile_apk, change_package_name
 
 
 STATIC_DATA = {
@@ -397,3 +397,15 @@ def get_menu_elements(driver):
         if i.text in allowed_menu:
             menus.append(i)
     return menus
+
+
+def modify_apk(apk_filename, new_package_name):
+
+    decompiled_filepath = str(os.path.join(TEMP_OUTPUT_DIR, apk_filename.split(".")[0]))
+
+    if not os.path.exists(decompiled_filepath):
+        decompiled_filepath = decompile_apk(apk_filename)
+
+    change_package_name(decompiled_filepath, new_package_name)
+    new_apk_filepath = compile_apk(decompiled_filepath)
+    return new_apk_filepath
