@@ -11,6 +11,7 @@ from logger import logger
 SRC_DIR = Path(__file__).resolve().parents[1]
 APKTOOL_FILE = os.path.join(SRC_DIR, 'apk_automations', "apktools", "apktool.bat")
 APK_SIGNER = os.path.join(SRC_DIR, 'apk_automations', "apktools", "apksigner.jar")
+ZIP_ALIGN_FILE = os.path.join(SRC_DIR, 'apk_automations', "apktools", "zipalign.exe")
 APKTOOL_PATH = os.path.join(SRC_DIR, 'apk_automations', "apktools")
 INPUT_APK_DIR = os.path.join(SRC_DIR, "base_apk")
 TEMP_OUTPUT_DIR = os.path.join(INPUT_APK_DIR, "temp")
@@ -77,14 +78,18 @@ def compile_apk(decompiled_apk_filepath: str) -> str:
     apk_name = os.path.split(decompiled_apk_filepath)[-1].split(".")[0] + ".apk"
     logger.info(f"Compiling {apk_name} from {decompiled_apk_filepath}")
     output_apk_filepath = os.path.join(TEMP_OUTPUT_DIR, apk_name)
+    zip_align_apk = os.path.join(TEMP_OUTPUT_DIR, "zip_"+apk_name)
     compile_command = [APKTOOL_FILE, "b",  "-f", "--use-aapt2", "-o", output_apk_filepath, decompiled_apk_filepath]
-    sign_apk_command = ["java", "-jar", APK_SIGNER, "sign", "--key", os.path.join(APKTOOL_PATH, "apkeasytool.pk8"), "--cert",
-                        os.path.join(APKTOOL_PATH, "apkeasytool.pem"), "-v4-signing-enabled", "false", "--out",
-                        output_apk_filepath, output_apk_filepath]
+    zip_align_command = [ZIP_ALIGN_FILE, "-p", "4", output_apk_filepath, zip_align_apk]
+    sign_apk_command = ["java", "-jar", APK_SIGNER, "sign", "--key", os.path.join(APKTOOL_PATH, "apkeasytool.pk8"),
+                        "--cert", os.path.join(APKTOOL_PATH, "apkeasytool.pem"), "-v4-signing-enabled", "false",
+                        "--out", output_apk_filepath, zip_align_apk]
     logger.debug(f"command for compiling apk is {compile_command}")
     try:
         subprocess.run(compile_command, check=True)
+        subprocess.run(zip_align_command, check=True)
         subprocess.run(sign_apk_command, check=True)
+        os.remove(zip_align_apk)
     except subprocess.CalledProcessError as e:
         logger.error(f"Error while compiling {apk_name}, exception is {e}")
         raise subprocess.CalledProcessError
