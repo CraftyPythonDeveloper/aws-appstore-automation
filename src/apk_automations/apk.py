@@ -9,7 +9,7 @@ sys.path.append("..")
 from logger import logger
 
 SRC_DIR = Path(__file__).resolve().parents[1]
-APKTOOL_FILE = os.path.join(SRC_DIR, 'apk_automations', "apktools", "apktool.bat")
+APKTOOL_FILE = os.path.join(SRC_DIR, 'apk_automations', "apktools", "apktool.jar")
 APK_SIGNER = os.path.join(SRC_DIR, 'apk_automations', "apktools", "apksigner.jar")
 ZIP_ALIGN_FILE = os.path.join(SRC_DIR, 'apk_automations', "apktools", "zipalign.exe")
 APKTOOL_PATH = os.path.join(SRC_DIR, 'apk_automations', "apktools")
@@ -35,7 +35,7 @@ def decompile_apk(apk_file_name: str) -> str:
 
     decompiled_apk_filepath = os.path.join(TEMP_OUTPUT_DIR, apk_file_name.split(".")[0])
     # test command -- apktool d -f --only-main-classes -o test_123 test124.apk
-    command = [APKTOOL_FILE, "d", apk_filepath, "-o", decompiled_apk_filepath, "-f"]
+    command = ["java", "-jar", APKTOOL_FILE, "d", apk_filepath, "-o", decompiled_apk_filepath, "-f"]
     logger.debug(f"command for decompiling apk is {command}")
 
     try:
