@@ -20,20 +20,19 @@ if not os.path.exists(TEMP_OUTPUT_DIR):
     os.mkdir(TEMP_OUTPUT_DIR)
 
 
-def decompile_apk(apk_file_name: str) -> str:
+def decompile_apk(apk_filepath: str, decompiled_apk_filepath: str) -> str:
     """
     Decompile an apk
-    :param apk_file_name: name of the apk, must be saved in base_apk dir
+    :param apk_filepath: name of the apk, must be saved in base_apk dir
+    :param decompiled_apk_filepath: path where decompiled apk needs to be stored
     :return: decompiled apk filepath
     """
-    apk_filepath = os.path.join(INPUT_APK_DIR, apk_file_name)
     logger.info(f"Decompiling apk {apk_filepath} file")
 
     if not os.path.isfile(apk_filepath):
-        logger.error(f"{apk_filepath} does not exist in {INPUT_APK_DIR} directory, please add it and try again.")
+        logger.error(f"{apk_filepath} does not exist directory, please add it and try again.")
         raise FileNotFoundError(f"{apk_filepath} does not exist in")
 
-    decompiled_apk_filepath = os.path.join(TEMP_OUTPUT_DIR, apk_file_name.split(".")[0])
     # test command -- apktool d -f --only-main-classes -o test_123 test124.apk
     command = ["java", "-jar", APKTOOL_FILE, "d", apk_filepath, "-o", decompiled_apk_filepath, "-f"]
     logger.debug(f"command for decompiling apk is {command}")
@@ -41,10 +40,10 @@ def decompile_apk(apk_file_name: str) -> str:
     try:
         subprocess.run(command, check=True)
     except subprocess.CalledProcessError as e:
-        logger.error(f"Error while decompiling apk: {apk_file_name}, exception is {e}")
+        logger.error(f"Error while decompiling apk: {apk_filepath}, exception is {e}")
         raise subprocess.CalledProcessError
 
-    logger.info(f"Successfully decompiled {apk_file_name} to {decompiled_apk_filepath}")
+    logger.info(f"Successfully decompiled {apk_filepath} to {decompiled_apk_filepath}")
     return decompiled_apk_filepath
 
 
@@ -69,17 +68,17 @@ def change_package_name(decompiled_apk_filepath: str, new_package_name: str,
     return manifest_filepath
 
 
-def compile_apk(decompiled_apk_filepath: str) -> str:
+def compile_apk(decompiled_apk_filepath: str, package_dir: str) -> str:
     """
     compile an apk package
     :param decompiled_apk_filepath: apk filepath
     :return: compiled apk filepath
     """
-    apk_name = os.path.split(decompiled_apk_filepath)[-1].split(".")[0] + ".apk"
+    apk_name = os.path.split(decompiled_apk_filepath)[-1].split(".")[0] + "_new.apk"
     logger.info(f"Compiling {apk_name} from {decompiled_apk_filepath}")
-    output_apk_filepath = os.path.join(TEMP_OUTPUT_DIR, apk_name)
-    zip_align_apk = os.path.join(TEMP_OUTPUT_DIR, "zip_"+apk_name)
-    compile_command = [APKTOOL_FILE, "b",  "-f", "--use-aapt2", "-o", output_apk_filepath, decompiled_apk_filepath]
+    output_apk_filepath = os.path.join(package_dir, apk_name)
+    zip_align_apk = os.path.join(package_dir, "zip_"+apk_name)
+    compile_command = ["java", "-jar", APKTOOL_FILE, "b",  "-f", "--use-aapt2", "-o", output_apk_filepath, decompiled_apk_filepath]
     zip_align_command = [ZIP_ALIGN_FILE, "-p", "4", output_apk_filepath, zip_align_apk]
     sign_apk_command = ["java", "-jar", APK_SIGNER, "sign", "--key", os.path.join(APKTOOL_PATH, "apkeasytool.pk8"),
                         "--cert", os.path.join(APKTOOL_PATH, "apkeasytool.pem"), "-v4-signing-enabled", "false",

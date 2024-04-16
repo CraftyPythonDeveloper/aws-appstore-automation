@@ -75,14 +75,20 @@ def get_apk_url(play_url):
             if match:
                 download_url = f"https://apkcombo.com/{match.group(0)}/{package_name}/download/apk"
                 ch_driver.get(download_url)
-                time.sleep(5)
-                soup = BeautifulSoup(ch_driver.page_source, "html.parser")
+                time.sleep(2)
+                for i in range(15):
+                    soup = BeautifulSoup(ch_driver.page_source, "html.parser")
+                    # ch_driver.close()
+                    apk_type = soup.find("ul", {"class": "file-list"}).find("span", {"class": "vtype"}).text
+                    if apk_type == "XAPK":
+                        ch_driver.close()
+                        raise ValueError("APK type is XAPK, Skipping downloading..")
+                    download_link = soup.find("a", class_="variant").get("href")
+                    if download_url:
+                        ch_driver.close()
+                        return download_link
+                    time.sleep(1)
                 ch_driver.close()
-                apk_type = soup.find("ul", {"class": "file-list"}).find("span", {"class": "vtype"}).text
-                if apk_type == "XAPK":
-                    raise ValueError("APK type is XAPK, Skipping downloading..")
-                download_link = soup.find("a", class_="variant").get("href")
-                return download_link
         except Exception as e:
             print(e)
             ch_driver.close()
@@ -117,12 +123,12 @@ def download_apk_data(google_play_url):
         os.mkdir(package_path)
     data = get_play_screenshots(google_play_url)
     logger.debug(f"extracted all the apk data -- {data}")
-    # apk_dl = get_apk_url(google_play_url)
-    # if not apk_dl:
-    #     os.rmdir(package_path)
-    #     return False
+    apk_dl = get_apk_url(google_play_url)
+    if not apk_dl:
+        os.rmdir(package_path)
+        return False
     app_name = data.pop("app_name")
-    # data[f"{''.join(e for e in app_name if e.isalnum())}.apk"] = apk_dl
+    data[f"{''.join(e for e in app_name if e.isalnum())}.apk"] = apk_dl
     for filename, url in data.items():
         download_n_save(url, filename, package_path)
     resize_images(package_path)

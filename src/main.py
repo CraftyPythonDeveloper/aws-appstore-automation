@@ -40,8 +40,16 @@ if __name__ == "__main__":
         for row in user_df.itertuples():
             try:
                 package_dir, app_name = download_apk_data(row.google_play_apk_url)
-                apk_filepath = modify_apk(row.base_apkname, row.package_name)
-                shutil.copy(apk_filepath, package_dir)
+                apk_name = f"{''.join(e for e in app_name if e.isalnum())}.apk"
+                org_apk_filepath = os.path.join(package_dir, apk_name)
+
+                if not os.path.isfile(org_apk_filepath):
+                    logger.debug(f"APK file not found for {app_name}, path is {org_apk_filepath}")
+                    continue
+
+                apk_filepath = modify_apk(apk_name, row.package_name, package_dir)
+                os.remove(org_apk_filepath)
+
                 apk_data[row.Index] = {"app_name": app_name, "package_dir": package_dir}
             except Exception as e:
                 logger.error(f"Error while downloading and modifying apk {row.google_play_apk_url}, {e}")

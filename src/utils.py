@@ -1,6 +1,7 @@
 import json
 import os.path
 import random
+import shutil
 import time
 from logger import logger
 
@@ -399,13 +400,13 @@ def get_menu_elements(driver):
     return menus
 
 
-def modify_apk(apk_filename, new_package_name):
-
-    decompiled_filepath = str(os.path.join(TEMP_OUTPUT_DIR, apk_filename.split(".")[0]))
-
-    if not os.path.exists(decompiled_filepath):
-        decompiled_filepath = decompile_apk(apk_filename)
-
+def modify_apk(apk_filename, new_package_name, package_dir):
+    logger.debug("Modifying apk.")
+    decompiled_filepath = str(os.path.join(package_dir, apk_filename.split(".")[0]))
+    org_apk_filename = str(os.path.join(package_dir, apk_filename))
+    decompile_apk(org_apk_filename, decompiled_filepath)
     change_package_name(decompiled_filepath, new_package_name)
-    new_apk_filepath = compile_apk(decompiled_filepath)
+    new_apk_filepath = compile_apk(decompiled_filepath, package_dir)
+    shutil.rmtree(decompiled_filepath)
+    logger.debug("Modifying apk done.")
     return new_apk_filepath
