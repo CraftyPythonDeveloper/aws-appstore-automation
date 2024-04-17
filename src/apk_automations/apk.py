@@ -79,7 +79,7 @@ def compile_apk(decompiled_apk_filepath: str) -> str:
     logger.info(f"Compiling {apk_name} from {decompiled_apk_filepath}")
     output_apk_filepath = os.path.join(TEMP_OUTPUT_DIR, apk_name)
     zip_align_apk = os.path.join(TEMP_OUTPUT_DIR, "zip_"+apk_name)
-    compile_command = [APKTOOL_FILE, "b",  "-f", "--use-aapt2", "-o", output_apk_filepath, decompiled_apk_filepath]
+    compile_command = ["java", "-jar", APKTOOL_FILE, "b",  "-f", "--use-aapt2", "-o", output_apk_filepath, decompiled_apk_filepath]
     zip_align_command = [ZIP_ALIGN_FILE, "-p", "4", output_apk_filepath, zip_align_apk]
     sign_apk_command = ["java", "-jar", APK_SIGNER, "sign", "--key", os.path.join(APKTOOL_PATH, "apkeasytool.pk8"),
                         "--cert", os.path.join(APKTOOL_PATH, "apkeasytool.pem"), "-v4-signing-enabled", "false",

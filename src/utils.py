@@ -403,7 +403,8 @@ def modify_apk(apk_filename, new_package_name):
 
     decompiled_filepath = str(os.path.join(TEMP_OUTPUT_DIR, apk_filename.split(".")[0]))
 
-    if not os.path.exists(decompiled_filepath):
+    manifest_filepath = os.path.join(decompiled_filepath, "AndroidManifest.xml")
+    if not os.path.exists(decompiled_filepath) or not os.path.isfile(manifest_filepath):
         decompiled_filepath = decompile_apk(apk_filename)
 
     change_package_name(decompiled_filepath, new_package_name)
