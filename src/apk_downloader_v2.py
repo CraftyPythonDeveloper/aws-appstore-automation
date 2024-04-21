@@ -76,7 +76,8 @@ def get_apk_url(play_url):
                 download_url = f"https://apkcombo.com/{match.group(0)}/{package_name}/download/apk"
                 ch_driver.get(download_url)
                 time.sleep(2)
-                for i in range(15):
+                for i in range(10):
+                    time.sleep(3)
                     soup = BeautifulSoup(ch_driver.page_source, "html.parser")
                     # ch_driver.close()
                     apk_type = soup.find("ul", {"class": "file-list"}).find("span", {"class": "vtype"}).text
@@ -87,7 +88,6 @@ def get_apk_url(play_url):
                     if download_url:
                         ch_driver.close()
                         return download_link
-                    time.sleep(1)
                 ch_driver.close()
         except Exception as e:
             print(e)

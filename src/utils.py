@@ -10,7 +10,7 @@ from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
 from amazoncaptcha import AmazonCaptcha
 import pyotp
-from apk_automations.apk import TEMP_OUTPUT_DIR, compile_apk, decompile_apk, change_package_name
+from apk_automations.apk import compile_apk, decompile_apk, change_package_name
 
 
 STATIC_DATA = {
@@ -407,6 +407,9 @@ def modify_apk(apk_filename, new_package_name, package_dir):
     decompile_apk(org_apk_filename, decompiled_filepath)
     change_package_name(decompiled_filepath, new_package_name)
     new_apk_filepath = compile_apk(decompiled_filepath, package_dir)
-    shutil.rmtree(decompiled_filepath)
+    try:
+        shutil.rmtree(decompiled_filepath)
+    except Exception as e:
+        logger.error(f"Unable to remove decompiled folder.., {e}")
     logger.debug("Modifying apk done.")
     return new_apk_filepath
