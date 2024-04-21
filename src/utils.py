@@ -121,6 +121,10 @@ def login(driver, email, password, totp, retry=0):
     logger.debug(f"Clicking signin button to login")
     click("sign in")
     random_sleep()
+    captcha = driver.find_elements(By.XPATH, '//h4[contains(text(), "Enter the characters you see below")]')
+    if captcha:
+        return login(driver, email, password, totp, retry=retry + 1)
+
     if "/ap/mfa?ie=" in driver.current_url:
         logger.debug(f"entering MFA code")
         write(totp_obj.now(), into="Enter OTP")
@@ -131,7 +135,10 @@ def login(driver, email, password, totp, retry=0):
     random_sleep()
     if "home" in driver.current_url:
         logger.debug("login success")
-
+        return True
+    elif "https://developer.amazon.com/500" in driver.current_url:
+        logger.debug("account seems to be disabled by aws..")
+    return False
 
 def create_new_app(driver, app_name, app_category, app_sub_category, retry=0):
     logger.debug(f"Creating new app {app_name}")

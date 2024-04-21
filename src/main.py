@@ -36,34 +36,37 @@ if __name__ == "__main__":
         logger.info(f"Found {user_df.shape[0]} apps for user {username}")
         temp_df_chunks = [user_df.iloc[i:i+5, :] for i in range(0, user_df.shape[0], 5)]
 
-        apk_data = {}
-        for row in user_df.itertuples():
-            try:
-                package_dir, app_name = download_apk_data(row.google_play_apk_url)
-                apk_name = f"{''.join(e for e in app_name if e.isalnum())}.apk"
-                org_apk_filepath = os.path.join(package_dir, apk_name)
-
-                if not os.path.isfile(org_apk_filepath):
-                    logger.debug(f"APK file not found for {app_name}, path is {org_apk_filepath}")
-                    continue
-
-                try:
-                    apk_filepath = modify_apk(apk_name, row.package_name, package_dir)
-                    os.remove(org_apk_filepath)
-
-                    apk_data[row.Index] = {"app_name": app_name, "package_dir": package_dir}
-                except Exception as e:
-                    logger.error("Error while modifying apk {exc}".format(exc=str(e)))
-                    shutil.rmtree(package_dir)
-            except Exception as e:
-                logger.error(f"Error while downloading and modifying apk {row.google_play_apk_url}, {e}")
-
+        # apk_data = {}
+        # for row in user_df.itertuples():
+        #     try:
+        #         package_dir, app_name = download_apk_data(row.google_play_apk_url)
+        #         apk_name = f"{''.join(e for e in app_name if e.isalnum())}.apk"
+        #         org_apk_filepath = os.path.join(package_dir, apk_name)
+        #
+        #         if not os.path.isfile(org_apk_filepath):
+        #             logger.debug(f"APK file not found for {app_name}, path is {org_apk_filepath}")
+        #             continue
+        #
+        #         try:
+        #             apk_filepath = modify_apk(apk_name, row.package_name, package_dir)
+        #             os.remove(org_apk_filepath)
+        #
+        #             apk_data[row.Index] = {"app_name": app_name, "package_dir": package_dir}
+        #         except Exception as e:
+        #             logger.error("Error while modifying apk {exc}".format(exc=str(e)))
+        #             shutil.rmtree(package_dir)
+        #     except Exception as e:
+        #         logger.error(f"Error while downloading and modifying apk {row.google_play_apk_url}, {e}")
         for temp_df in temp_df_chunks:
             driver = start_chrome()
             driver.maximize_window()
             logger.info("Started chrome driver, logging into amazon portal")
-            login(driver=driver, email=creds_dict["email"], password=creds_dict["password"],
-                  totp=creds_dict["TOTP"])
+            login_status = login(driver=driver, email=creds_dict["email"], password=creds_dict["password"],
+                                 totp=creds_dict["TOTP"])
+            if not login_status:
+                logger.info(f"Login Failed for user {creds_dict['email']}")
+                driver.close()
+                break
             logger.info("Login success..")
             for row in temp_df.itertuples():
                 try:
