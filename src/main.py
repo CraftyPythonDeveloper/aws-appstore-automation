@@ -47,10 +47,14 @@ if __name__ == "__main__":
                     logger.debug(f"APK file not found for {app_name}, path is {org_apk_filepath}")
                     continue
 
-                apk_filepath = modify_apk(apk_name, row.package_name, package_dir)
-                os.remove(org_apk_filepath)
+                try:
+                    apk_filepath = modify_apk(apk_name, row.package_name, package_dir)
+                    os.remove(org_apk_filepath)
 
-                apk_data[row.Index] = {"app_name": app_name, "package_dir": package_dir}
+                    apk_data[row.Index] = {"app_name": app_name, "package_dir": package_dir}
+                except Exception as e:
+                    logger.error("Error while modifying apk {exc}".format(exc=str(e)))
+                    shutil.rmtree(package_dir)
             except Exception as e:
                 logger.error(f"Error while downloading and modifying apk {row.google_play_apk_url}, {e}")
 

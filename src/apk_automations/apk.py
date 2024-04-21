@@ -58,6 +58,10 @@ def change_package_name(decompiled_apk_filepath: str, new_package_name: str,
     :return: manifest file path
     """
     manifest_filepath = os.path.join(decompiled_apk_filepath, manifest_filename)
+    if not os.path.isfile(manifest_filepath):
+        logger.error(f"Unable to find manifest file: {manifest_filepath}")
+        raise FileNotFoundError(f"Unable to find manifest file: {manifest_filepath}")
+
     logger.info(f"changing package name")
     logger.debug(f"changing package name from {manifest_filename} path")
     tree = ElementTree.parse(manifest_filepath)
