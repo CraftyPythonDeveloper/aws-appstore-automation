@@ -13,11 +13,6 @@ APKTOOL_FILE = os.path.join(SRC_DIR, 'apk_automations', "apktools", "apktool.jar
 APK_SIGNER = os.path.join(SRC_DIR, 'apk_automations', "apktools", "apksigner.jar")
 ZIP_ALIGN_FILE = os.path.join(SRC_DIR, 'apk_automations', "apktools", "zipalign.exe")
 APKTOOL_PATH = os.path.join(SRC_DIR, 'apk_automations', "apktools")
-INPUT_APK_DIR = os.path.join(SRC_DIR, "base_apk")
-TEMP_OUTPUT_DIR = os.path.join(INPUT_APK_DIR, "temp")
-
-if not os.path.exists(TEMP_OUTPUT_DIR):
-    os.mkdir(TEMP_OUTPUT_DIR)
 
 
 def decompile_apk(apk_filepath: str, decompiled_apk_filepath: str) -> str:
