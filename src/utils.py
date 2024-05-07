@@ -3,6 +3,8 @@ import os.path
 import random
 import shutil
 import time
+from pathlib import Path
+
 from logger import logger
 
 from helium import *
@@ -12,7 +14,8 @@ from amazoncaptcha import AmazonCaptcha
 import pyotp
 from apk_automations.apk import compile_apk, decompile_apk, change_package_name
 
-
+SRC_DIR = Path(__file__).resolve().parents[1]
+STATUS_FILEPATH = os.path.join(SRC_DIR, "src", "status.txt")
 STATIC_DATA = {
     "dashboard_url": "https://developer.amazon.com/dashboard",
     "create_new_app_url": "https://developer.amazon.com/apps-and-games/console/app/new.html",
@@ -123,7 +126,7 @@ def login(driver, email, password, totp, retry=0):
     random_sleep()
     captcha = driver.find_elements(By.XPATH, '//h4[contains(text(), "Enter the characters you see below")]')
     if captcha:
-        return login(driver, email, password, totp, retry=retry + 1)
+        return login(driver, email, password, totp, retry=retry+1)
 
     if "/ap/mfa?ie=" in driver.current_url:
         logger.debug(f"entering MFA code")
@@ -133,6 +136,14 @@ def login(driver, email, password, totp, retry=0):
     logger.debug(f"Clicking signin button to login")
     click("sign in")
     random_sleep()
+
+    captcha = driver.find_elements(By.XPATH, '//h4[contains(text(), "Enter the characters you see below")]')
+    if captcha and retry < 3:
+        logger.debug("Captcha detected, Solving captcha..")
+        solve_captcha(driver)
+        logger.debug(f"Retrying {retry} times to login")
+        return login(driver, email, password, totp, retry=retry+1)
+
     if "home" in driver.current_url:
         logger.debug("login success")
         return True
@@ -191,7 +202,7 @@ def create_new_app(driver, app_name, app_category, app_sub_category, retry=0):
         create_new_app(driver, app_name, app_category, app_sub_category, retry+1)
 
 
-def create_app_page2(driver, static_path, game_features, language_support, retry=0):
+def create_app_page2(driver, static_path, game_features, language_support, retry=0, drm=True):
     try:
         apk_filepath = get_static_filepath(static_path)["apk_filepath"]
         logger.debug(f"apk filepath {apk_filepath}")
@@ -226,8 +237,10 @@ def create_app_page2(driver, static_path, game_features, language_support, retry
 
         random_sleep()
         try:
-            # click(S("//label[@class='orientation-right css-qbmcu0']//span[text()='No']"))     # DRM No
-            click(S("//label[@class='orientation-right css-qbmcu0']//span[text()='Yes']"))      # DRM Yes
+            if not drm:
+                click(S("//label[@class='orientation-right css-qbmcu0']//span[text()='No']"))     # DRM No
+            else:
+                click(S("//label[@class='orientation-right css-qbmcu0']//span[text()='Yes']"))      # DRM Yes
         except:
             logger.info("DRM has no radio button..")
 
@@ -420,3 +433,15 @@ def modify_apk(apk_filename, new_package_name, package_dir):
         logger.error(f"Unable to remove decompiled folder.., {e}")
     logger.debug("Modifying apk done.")
     return new_apk_filepath
+
+
+def get_running_status():
+    with open(STATUS_FILEPATH, "r", encoding="utf-8") as file:
+        status = file.read().strip()
+    return status
+
+
+def update_running_status(status):
+    with open(STATUS_FILEPATH, "w", encoding="utf-8") as file:
+        file.write(status)
+    return True

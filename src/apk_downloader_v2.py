@@ -114,7 +114,7 @@ def resize_images(img_dir):
             os.remove(image)
 
 
-def download_apk_data(google_play_url):
+def download_apk_data(google_play_url, download_apk=True):
     logger.info(f"Downloading apk from {google_play_url}")
     package_name = get_package_name(google_play_url)
     logger.debug(f"Extracted the package name {package_name}")
@@ -123,12 +123,13 @@ def download_apk_data(google_play_url):
         os.mkdir(package_path)
     data = get_play_screenshots(google_play_url)
     logger.debug(f"extracted all the apk data -- {data}")
-    apk_dl = get_apk_url(google_play_url)
-    if not apk_dl:
-        os.rmdir(package_path)
-        return False
     app_name = data.pop("app_name")
-    data[f"{''.join(e for e in app_name if e.isalnum())}.apk"] = apk_dl
+    if download_apk:
+        apk_dl = get_apk_url(google_play_url)
+        if not apk_dl:
+            os.rmdir(package_path)
+            return False, False
+        data[f"{''.join(e for e in app_name if e.isalnum())}.apk"] = apk_dl
     for filename, url in data.items():
         download_n_save(url, filename, package_path)
     resize_images(package_path)
