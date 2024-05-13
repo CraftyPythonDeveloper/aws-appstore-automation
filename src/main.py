@@ -27,8 +27,8 @@ INPUT_APK_DIR = os.path.join(SRC_DIR, "src", "base_apk")
 def run(use_local_apk, change_package_name, drm_status, start_from, *args, **kwargs):
     global driver
     logger.info("Reading the config file..")
-    config_df = pd.read_excel("config 4.xlsx", sheet_name="config", index_col=0)
-    creds_df = pd.read_excel("config 4.xlsx", sheet_name="creds", index_col=0)
+    config_df = pd.read_excel("config.xlsx", sheet_name="config", index_col=0)
+    creds_df = pd.read_excel("config.xlsx", sheet_name="creds", index_col=0)
     logger.info(f"Found {config_df.shape[0]} total apps in config file.")
 
     if start_from:
