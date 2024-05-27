@@ -117,13 +117,14 @@ def login(driver, email, password, totp, retry=0):
 
     logger.debug(f"entering email {email}")
     write(email, into='email')
-    random_sleep()
+    random_sleep(5, 10)
     logger.debug(f"entering password..")
     write(password, into='password')
     driver.execute_script(STATIC_DATA["scroll_top_query"])
     logger.debug(f"Clicking signin button to login")
+    random_sleep(5, 10)
     click("sign in")
-    random_sleep()
+    random_sleep(5, 10)
     captcha = driver.find_elements(By.XPATH, '//h4[contains(text(), "Enter the characters you see below")]')
     if captcha:
         return login(driver, email, password, totp, retry=retry+1)
@@ -132,10 +133,10 @@ def login(driver, email, password, totp, retry=0):
         logger.debug(f"entering MFA code")
         write(totp_obj.now(), into="Enter OTP")
     driver.execute_script(STATIC_DATA["scroll_top_query"])
-    random_sleep()
+    random_sleep(5, 10)
     logger.debug(f"Clicking signin button to login")
     click("sign in")
-    random_sleep()
+    random_sleep(5, 10)
 
     captcha = driver.find_elements(By.XPATH, '//h4[contains(text(), "Enter the characters you see below")]')
     if captcha and retry < 3:
@@ -150,6 +151,7 @@ def login(driver, email, password, totp, retry=0):
     elif "https://developer.amazon.com/500" in driver.current_url:
         logger.debug("account seems to be disabled by aws..")
     return False
+
 
 def create_new_app(driver, app_name, app_category, app_sub_category, retry=0):
     logger.debug(f"Creating new app {app_name}")
