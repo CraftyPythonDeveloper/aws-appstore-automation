@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pandas as pd
 from dotenv import load_dotenv
-from helium import start_chrome, kill_browser
-
+from helium import kill_browser, set_driver, get_driver
+import undetected_chromedriver as uc
 from apk_downloader_v2 import download_apk_data
 from utils import (login, create_new_app, create_app_page2, create_app_page3, create_app_page4, create_app_page5,
                    random_sleep, STATIC_DATA, modify_apk, update_running_status)
@@ -88,7 +88,8 @@ def run(use_local_apk, change_package_name, drm_status, start_from, *args, **kwa
                 logger.error(f"Error while downloading and modifying apk {row.google_play_apk_url}, {e}")
 
         for temp_df in temp_df_chunks:
-            driver = start_chrome()
+            set_driver(uc.Chrome())
+            driver = get_driver()
             driver.maximize_window()
             logger.info("Started chrome driver, logging into amazon portal")
             login_status = login(driver=driver, email=creds_dict["email"], password=creds_dict["password"],
