@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pandas as pd
 from dotenv import load_dotenv
-from helium import start_chrome, kill_browser
-
+from helium import kill_browser, set_driver, get_driver
+import undetected_chromedriver as uc
 from apk_downloader_v2 import download_apk_data
 from utils import (login, create_new_app, create_app_page2, create_app_page3, create_app_page4, create_app_page5,
                    random_sleep, STATIC_DATA, modify_apk, update_running_status)
@@ -21,11 +21,9 @@ load_dotenv()
 
 SRC_DIR = Path(__file__).resolve().parents[1]
 INPUT_APK_DIR = os.path.join(SRC_DIR, "src", "base_apk")
-# TEMP_OUTPUT_DIR = os.path.join(INPUT_APK_DIR, "temp")
 
 
 def run(use_local_apk, change_package_name, drm_status, start_from, *args, **kwargs):
-    global driver
     logger.info("Reading the config file..")
     config_df = pd.read_excel("config.xlsx", sheet_name="config", index_col=0)
     creds_df = pd.read_excel("config.xlsx", sheet_name="creds", index_col=0)
@@ -48,47 +46,9 @@ def run(use_local_apk, change_package_name, drm_status, start_from, *args, **kwa
         logger.info(f"Found {user_df.shape[0]} apps for user {username}")
         temp_df_chunks = [user_df.iloc[i:i+5, :] for i in range(0, user_df.shape[0], 5)]
 
-        apk_data = {}
-        for row in user_df.itertuples():
-            try:
-                if use_local_apk:
-                    package_dir, app_name = download_apk_data(row.google_play_apk_url, download_apk=False)
-                    apk_name = row.base_apkname
-                    shutil.copy(os.path.join(INPUT_APK_DIR, apk_name), package_dir)
-                else:
-                    package_dir, app_name = download_apk_data(row.google_play_apk_url)
-                    apk_name = f"{''.join(e for e in app_name if e.isalnum())}.apk"
-
-                org_apk_filepath = os.path.join(package_dir, apk_name)
-
-                if not os.path.isfile(org_apk_filepath):
-                    logger.debug(f"APK file not found for {app_name}, path is {org_apk_filepath}")
-                    continue
-
-                if not package_dir:
-                    raise AttributeError("Unable to download apk file.")
-
-                try:
-                    # if change package name is checked or use local apk is checked.
-                    if change_package_name:
-                        apk_filepath = modify_apk(apk_name, row.package_name, package_dir)
-                        if not apk_filepath:
-                            logger.info("Unable to modify the apk.")
-                            continue
-
-                        if org_apk_filepath:
-                            os.remove(org_apk_filepath)
-
-                    # when download apk is checked and no modification is checked, then we just download and continue.
-                    apk_data[row.Index] = {"app_name": app_name, "package_dir": package_dir}
-                except Exception as e:
-                    logger.error("Error while modifying apk {exc}".format(exc=str(e)))
-                    shutil.rmtree(package_dir)
-            except Exception as e:
-                logger.error(f"Error while downloading and modifying apk {row.google_play_apk_url}, {e}")
-
         for temp_df in temp_df_chunks:
-            driver = start_chrome()
+            set_driver(uc.Chrome())
+            driver = get_driver()
             driver.maximize_window()
             logger.info("Started chrome driver, logging into amazon portal")
             login_status = login(driver=driver, email=creds_dict["email"], password=creds_dict["password"],
@@ -99,11 +59,45 @@ def run(use_local_apk, change_package_name, drm_status, start_from, *args, **kwa
                 break
             logger.info("Login success..")
             for row in temp_df.itertuples():
-                if not apk_data.get(row.Index):
-                    logger.info(f"Skipping {row.google_play_apk_url}, error while downloading apk.")
+                try:
+                    if use_local_apk:
+                        package_dir, app_name = download_apk_data(row.google_play_apk_url, download_apk=False)
+                        apk_name = row.base_apkname
+                        shutil.copy(os.path.join(INPUT_APK_DIR, apk_name), package_dir)
+                    else:
+                        package_dir, app_name = download_apk_data(row.google_play_apk_url)
+                        apk_name = f"{''.join(e for e in app_name if e.isalnum())}.apk"
+
+                    org_apk_filepath = os.path.join(package_dir, apk_name)
+
+                    if not os.path.isfile(org_apk_filepath):
+                        logger.debug(f"APK file not found for {app_name}, path is {org_apk_filepath}")
+                        continue
+
+                    if not package_dir:
+                        logger.error("Unable to download apk file.")
+                        continue
+
+                    try:
+                        # if change package name is checked or use local apk is checked.
+                        if change_package_name:
+                            apk_filepath = modify_apk(apk_name, row.package_name, package_dir)
+                            if not apk_filepath:
+                                logger.info("Unable to modify the apk.")
+                                continue
+
+                            if org_apk_filepath:
+                                os.remove(org_apk_filepath)
+
+                    except Exception as e:
+                        logger.error("Error while modifying apk {exc}".format(exc=str(e)))
+                        shutil.rmtree(package_dir)
+                        continue
+
+                except Exception as e:
+                    logger.error(f"Error while downloading and modifying apk {row.google_play_apk_url}, {e}")
                     continue
 
-                package_dir, app_name = apk_data[row.Index]["package_dir"], apk_data[row.Index]["app_name"]
                 try:
                     logger.info(f"package_dir: {package_dir}, app_name: {app_name}")
                     logger.info(f"Creating {app_name} app to portal..")

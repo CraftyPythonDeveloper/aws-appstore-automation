@@ -5,6 +5,8 @@ import shutil
 import time
 from pathlib import Path
 
+from selenium.webdriver import ActionChains
+
 from logger import logger
 
 from helium import *
@@ -87,6 +89,16 @@ def random_sleep(min_=1, max_=3):
     time.sleep(random.randint(min_, max_))
 
 
+def start_typing(driver, elem, text):
+    action = ActionChains(driver)
+    action.move_to_element(elem).click()
+    for i in text:
+        action.send_keys(i)
+        action.perform()
+        time.sleep(random.uniform(0.2, 0.5))
+    return True
+
+
 def solve_captcha(driver):
     try:
         link = find_all(S("img", below="Enter the characters you see below"))[0].web_element.get_attribute("src")
@@ -116,14 +128,19 @@ def login(driver, email, password, totp, retry=0):
         return login(driver, email, password, totp, retry=retry+1)
 
     logger.debug(f"entering email {email}")
-    write(email, into='email')
+    email_elem = driver.find_element(By.ID, "ap_email")
+    start_typing(driver=driver, elem=email_elem, text=email)
+    # write(email, into='email')
     random_sleep(5, 10)
     logger.debug(f"entering password..")
-    write(password, into='password')
+    password_elem = driver.find_element(By.ID, "ap_password")
+    start_typing(driver=driver, elem=password_elem, text=password)
+    # write(password, into='password')
     driver.execute_script(STATIC_DATA["scroll_top_query"])
     logger.debug(f"Clicking signin button to login")
     random_sleep(5, 10)
-    click("sign in")
+    driver.find_element(By.ID, "signInSubmit").click()
+    # click("sign in")
     random_sleep(5, 10)
     captcha = driver.find_elements(By.XPATH, '//h4[contains(text(), "Enter the characters you see below")]')
     if captcha:
@@ -131,11 +148,14 @@ def login(driver, email, password, totp, retry=0):
 
     if "/ap/mfa?ie=" in driver.current_url:
         logger.debug(f"entering MFA code")
-        write(totp_obj.now(), into="Enter OTP")
+        otp_elem = driver.find_element(By.ID, "auth-mfa-otpcode")
+        start_typing(driver=driver, elem=otp_elem, text=totp_obj.now())
+        # write(totp_obj.now(), into="Enter OTP")
     driver.execute_script(STATIC_DATA["scroll_top_query"])
     random_sleep(5, 10)
     logger.debug(f"Clicking signin button to login")
-    click("sign in")
+    driver.find_element(By.ID, "auth-signin-button").click()
+    # click("sign in")
     random_sleep(5, 10)
 
     captcha = driver.find_elements(By.XPATH, '//h4[contains(text(), "Enter the characters you see below")]')
