@@ -55,11 +55,12 @@ def get_apk_url(play_url):
     package_name = get_package_name(play_url)
     url = get_apkpure_dl(play_url)
     if "winudf.com" in url:
-        logger.debug(f"Found apk download link from apkpure, url is {url}")
+        logger.info(f"Found apk download link from apkpure")
+        logger.debug(f"download url is {url}")
         return url
     else:
-        logger.error(f"Could not find apk download link from apkpure, trying again with apkcombo")
-        ch_driver = get_chrome_driver()
+        logger.info(f"Could not find apk download link from apkpure, trying again with apkcombo")
+        ch_driver = get_chrome_driver(headless=True)
         try:
             search_url = f"https://apkcombo.com/downloader#package={package_name}"
             ch_driver.get(search_url)
@@ -73,7 +74,8 @@ def get_apk_url(play_url):
                 download_link = soup.find("a", class_="variant").get("href")
                 if download_link:
                     ch_driver.quit()
-                    logger.debug(f"Found apk download link from apkcombo, url: {download_link}")
+                    logger.info(f"Found apk download link from apkcombo")
+                    logger.debug(f"download url is {download_link}")
                     return download_link
             ch_driver.quit()
             logger.info("Could not find the apk download link from apkcombo..")
@@ -147,31 +149,31 @@ def download_n_save(url, filename, save_path_dir, retry=0):
 
 
 # for test purpose.
-# play_urls = """https://play.google.com/store/apps/details?id=com.egd.TheBaldEagleEscape
-# https://play.google.com/store/apps/details?id=com.egd.FindTheAngelCrown
-# https://play.google.com/store/apps/details?id=com.egd.HandsomeLittleBoyHouseEscape
-# https://play.google.com/store/apps/details?id=com.egd.FunnyTomatoRescue
-# https://play.google.com/store/apps/details?id=com.egd.ForestGreenTortoiseRescue
-# https://play.google.com/store/apps/details?id=com.egd.GorgeousDalmatianDogHouseRescue
-# https://play.google.com/store/apps/details?id=game.omicron.levelupsquad&ref=apkcombo.com
-# https://play.google.com/store/apps/details?id=com.LinaGames.GlassMan&ref=apkcombo.com
-# https://play.google.com/store/apps/details?id=game.omicron.climbwar&ref=apkcombo.com
-# https://play.google.com/store/apps/details?id=com.acrab.matchitpuzzle&ref=apkcombo.com
-# https://play.google.com/store/apps/details?id=com.toka.town.life.world.avatar.toca.boca.miga.toga.tira.my.world
-# https://play.google.com/store/apps/details?id=com.Avatar.World.City.Life.tira.town.miga.toca.boca.Avitar
-# https://play.google.com/store/apps/details?id=com.toka.town.life.world.avatar.toca.boca.miga.toga.tira.my.world.castle
-# https://play.google.com/store/apps/details?id=com.anime.sakura.school.simulator.life.love.games
-# https://play.google.com/store/apps/details?id=com.stair.run.bridge.race.bridgeway.game
-# https://play.google.com/store/apps/details?id=com.diy.bubble.tea.tapioca.recipe.tasty
-# https://play.google.com/store/apps/details?id=com.antistress.relaxing.games.stress.puppet
-# https://play.google.com/store/apps/details?id=com.adnime.vlinder.princesss.dress.up.fashion.everskies.girl.games
-# https://play.google.com/store/apps/details?id=com.love.nikki.adnime.dress.up.simulator.games
-# https://play.google.com/store/apps/details?id=com.happy.township.farming.free.games
-# https://play.google.com/store/apps/details?id=com.toka.hair.salon.makeup.games
-# https://play.google.com/store/apps/details?id=com.ldle.market.tycoon.shopcooking
-# https://play.google.com/store/apps/details?id=com.pranks.blastet.neaf.epic.game
-# https://play.google.com/store/apps/details?id=com.anime.fashion.princess.girl.dress.up
-# https://play.google.com/store/apps/details?id=com.world.war.mission.strikes.offline.game""".split("\n")
+play_urls = """https://play.google.com/store/apps/details?id=com.egd.TheBaldEagleEscape
+https://play.google.com/store/apps/details?id=com.egd.FindTheAngelCrown
+https://play.google.com/store/apps/details?id=com.egd.HandsomeLittleBoyHouseEscape
+https://play.google.com/store/apps/details?id=com.egd.FunnyTomatoRescue
+https://play.google.com/store/apps/details?id=com.egd.ForestGreenTortoiseRescue
+https://play.google.com/store/apps/details?id=com.egd.GorgeousDalmatianDogHouseRescue
+https://play.google.com/store/apps/details?id=game.omicron.levelupsquad&ref=apkcombo.com
+https://play.google.com/store/apps/details?id=com.LinaGames.GlassMan&ref=apkcombo.com
+https://play.google.com/store/apps/details?id=game.omicron.climbwar&ref=apkcombo.com
+https://play.google.com/store/apps/details?id=com.acrab.matchitpuzzle&ref=apkcombo.com
+https://play.google.com/store/apps/details?id=com.toka.town.life.world.avatar.toca.boca.miga.toga.tira.my.world
+https://play.google.com/store/apps/details?id=com.Avatar.World.City.Life.tira.town.miga.toca.boca.Avitar
+https://play.google.com/store/apps/details?id=com.toka.town.life.world.avatar.toca.boca.miga.toga.tira.my.world.castle
+https://play.google.com/store/apps/details?id=com.anime.sakura.school.simulator.life.love.games
+https://play.google.com/store/apps/details?id=com.stair.run.bridge.race.bridgeway.game
+https://play.google.com/store/apps/details?id=com.diy.bubble.tea.tapioca.recipe.tasty
+https://play.google.com/store/apps/details?id=com.antistress.relaxing.games.stress.puppet
+https://play.google.com/store/apps/details?id=com.adnime.vlinder.princesss.dress.up.fashion.everskies.girl.games
+https://play.google.com/store/apps/details?id=com.love.nikki.adnime.dress.up.simulator.games
+https://play.google.com/store/apps/details?id=com.happy.township.farming.free.games
+https://play.google.com/store/apps/details?id=com.toka.hair.salon.makeup.games
+https://play.google.com/store/apps/details?id=com.ldle.market.tycoon.shopcooking
+https://play.google.com/store/apps/details?id=com.pranks.blastet.neaf.epic.game
+https://play.google.com/store/apps/details?id=com.anime.fashion.princess.girl.dress.up
+https://play.google.com/store/apps/details?id=com.world.war.mission.strikes.offline.game""".split("\n")
 
 #
 # with ThreadPoolExecutor(max_workers=5) as exe:
@@ -186,11 +188,11 @@ def download_n_save(url, filename, save_path_dir, retry=0):
 #         list(results)
 
 #
-# a = []
-# for i in play_urls:
-#     print(f"downloading {i}")
-#     link = get_apk_url(i)
-#     print(f"link: {link}")
-#     a.append(link)
-#     print(f"Done downloading {i}")
-# print(a)
+a = []
+for i in play_urls:
+    print(f"downloading {i}")
+    link = get_apk_url(i)
+    print(f"link: {link}")
+    a.append(link)
+    print(f"Done downloading {i}")
+print(a)
