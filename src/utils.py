@@ -31,8 +31,9 @@ STATIC_DATA = {
 }
 prompt = """You are an android app description suggestion agent and your job is to generate short description, 
             long description and short feature description of android app by using below provided details and make sure
-             to use response format as reference to provide response in the same key value pair, the key name should be
-              strictly followed. 
+             to use response format as reference to provide response in the same key value pair, the response 
+             format needs to be strictly followed, if required regenerate the response but make sure that the dictionary 
+             keys are exact as they are in response. 
             ### details App Name: {app_name} App Categorie: {app_cat} App Sub Categorie: {app_sub_cat}
 
             ### Response format
