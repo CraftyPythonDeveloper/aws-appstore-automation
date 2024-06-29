@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 
 from selenium.webdriver import ActionChains
-
+from seleniumbase import Driver
 from logger import logger
 
 from helium import *
@@ -19,7 +19,7 @@ from apk_automations.apk import compile_apk, decompile_apk, change_package_name
 SRC_DIR = Path(__file__).resolve().parents[1]
 STATUS_FILEPATH = os.path.join(SRC_DIR, "src", "status.txt")
 STATIC_DATA = {
-    "dashboard_url": "https://developer.amazon.com/dashboard",
+    "dashboard_url": "https://developer.amazon.com/home.html",
     "create_new_app_url": "https://developer.amazon.com/apps-and-games/console/app/new.html",
     "scroll_top_query": "document.documentElement.scrollTop = 0;",
     "logout_url": "https://www.amazon.com/ap/signin?openid.return_to=https%3A%2F%2Fdeveloper.amazon.com%2Fapps-and"
@@ -42,6 +42,12 @@ prompt = """You are an android app description suggestion agent and your job is 
 response_format = '{"short_description": "this is short description", "long_description": "this is long description", ' \
                   '"short_feature": "this is short feature description", "keywords": "keyword1 keyword2 keyword3 ' \
                   'keyword4"}'
+
+
+def get_chrome_driver(headless=False):
+    driver = Driver(uc=True, incognito=True, headless=headless)
+    driver.maximize_window()
+    return driver
 
 
 def get_static_filepath(static_path):
@@ -208,8 +214,9 @@ def create_new_app(driver, app_name, app_category, app_sub_category, retry=0):
         logger.debug("Saved")
         random_sleep(min_=3, max_=5)
         if not driver.current_url.startswith("https://developer.amazon.com/apps-and-games/console/app/amzn1.devporta"):
-            logger.debug("Error occurred while submitting..")
-            raise AttributeError("Error occurred while submitting..")
+            driver.refresh()
+            logger.debug("The next page url did not change, retrying again..")
+            return create_new_app(driver, app_name, app_category, app_sub_category, retry + 1)
         try:
             click("Looks Great")
         except LookupError:

@@ -7,8 +7,8 @@ from pathlib import Path
 import os
 from logger import logger
 from PIL import Image
-from selenium.webdriver import Chrome, ChromeOptions
 from requests.exceptions import ChunkedEncodingError
+from utils import get_chrome_driver
 
 requests.packages.urllib3.disable_warnings()
 WRK_DIR = Path(__file__).resolve().parents[1]
@@ -17,15 +17,6 @@ headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
                   "Chrome/89.0.4389.114 Safari/537.36",
 }
-
-
-def get_chrome_driver(headless=False):
-    chrome_options = ChromeOptions()
-    if headless:
-        chrome_options.add_argument("--headless")
-    driver = Chrome(options=chrome_options)
-    driver.maximize_window()
-    return driver
 
 
 def get_play_screenshots(play_url):
@@ -60,38 +51,35 @@ def get_apkpure_dl(play_url):
 
 
 def get_apk_url(play_url):
-    pattern = r'/([^/]+)/$'
+    logger.info(f"Fetching apk downloading link {play_url}")
     package_name = get_package_name(play_url)
     url = get_apkpure_dl(play_url)
     if "winudf.com" in url:
+        logger.debug(f"Found apk download link from apkpure, url is {url}")
         return url
     else:
+        logger.error(f"Could not find apk download link from apkpure, trying again with apkcombo")
         ch_driver = get_chrome_driver()
         try:
-            search_url = f"https://apkcombo.com/search?q={package_name}"
+            search_url = f"https://apkcombo.com/downloader#package={package_name}"
             ch_driver.get(search_url)
             time.sleep(5)
-            match = re.search(pattern, ch_driver.current_url)
-            if match:
-                download_url = f"https://apkcombo.com/{match.group(0)}/{package_name}/download/apk"
-                ch_driver.get(download_url)
-                time.sleep(2)
-                for i in range(10):
-                    time.sleep(3)
-                    soup = BeautifulSoup(ch_driver.page_source, "html.parser")
-                    # ch_driver.close()
-                    apk_type = soup.find("ul", {"class": "file-list"}).find("span", {"class": "vtype"}).text
-                    if apk_type == "XAPK":
-                        ch_driver.close()
-                        raise ValueError("APK type is XAPK, Skipping downloading..")
-                    download_link = soup.find("a", class_="variant").get("href")
-                    if download_url:
-                        ch_driver.close()
-                        return download_link
-                ch_driver.close()
+            for i in range(10):
+                time.sleep(3)
+                soup = BeautifulSoup(ch_driver.page_source, "html.parser")
+                apk_type = soup.find("ul", {"class": "file-list"}).find("span", {"class": "vtype"}).text.strip()
+                if apk_type == "XAPK":
+                    raise ValueError("APK type is XAPK, Skipping downloading..")
+                download_link = soup.find("a", class_="variant").get("href")
+                if download_link:
+                    ch_driver.quit()
+                    logger.debug(f"Found apk download link from apkcombo, url: {download_link}")
+                    return download_link
+            ch_driver.quit()
+            logger.info("Could not find the apk download link from apkcombo..")
         except Exception as e:
-            print(e)
-            ch_driver.close()
+            logger.error(f"an exception occurred while fetching download link from apk combo, exception: {str(e)}")
+            ch_driver.quit()
         return False
 
 
@@ -159,55 +147,31 @@ def download_n_save(url, filename, save_path_dir, retry=0):
 
 
 # for test purpose.
-# play_urls = """https://play.google.com/store/apps/details?id=com.falcon.flying.TheEagleSimulator
-# https://play.google.com/store/apps/details?id=com.flying.squirrel.SquirrelSimulatorGame
-# https://play.google.com/store/apps/details?id=com.mane.jungle.hunter.FoxSimulator
-# https://play.google.com/store/apps/details?id=com.Hunter.world.KomodoDragonHuntingGame
-# https://play.google.com/store/apps/details?id=com.Sea.Queen.MermaidSimulatorGame
-# https://play.google.com/store/apps/details?id=com.Hungry.Wild.CrocodileSimulator
-# https://play.google.com/store/apps/details?id=com.Warthog.predator.hunter.PigSavannaWarthogGame
-# https://play.google.com/store/apps/details?id=com.Hunting.hot.jungle.BearhuntSimulator
-# https://play.google.com/store/apps/details?id=com.Hunter.Mane.TheWolfSimulator
-# https://play.google.com/store/apps/details?id=com.Insect.worm.SpiderSimulator
-# https://play.google.com/store/apps/details?id=com.Reptile.Venom.ScorpionSimulator
-# https://play.google.com/store/apps/details?id=com.Anaconda.Cobra.Ratle.SnakeSimulator
-# https://play.google.com/store/apps/details?id=com.Insect.Bug.AntSimulator
-# https://play.google.com/store/apps/details?id=com.bowandarrow.robbinhood.ArcheryMaster3D
-# https://play.google.com/store/apps/details?id=com.Xclusive.Pony.pet.FlyingUnicornSimulator
-# https://play.google.com/store/apps/details?id=com.rebirth.dragonhunt.DeadlyDragonRevengeSim
-# https://play.google.com/store/apps/details?id=com.King.Hunter.InsectoidCrabMonster
-# https://play.google.com/store/apps/details?id=com.Flying.Vampire.DuckSimulatorJungleGame
-# https://play.google.com/store/apps/details?id=com.Pridator.Aquatic.Swim.PiranhaUnderwaterGame
-# https://play.google.com/store/apps/details?id=com.parking.police.car
-# https://play.google.com/store/apps/details?id=com.parking.prado
-# https://play.google.com/store/apps/details?id=com.parking.oil.transport.truck
-# https://play.google.com/store/apps/details?id=com.parking.army.truck
-# https://play.google.com/store/apps/details?id=com.parking.buggy
-# https://play.google.com/store/apps/details?id=com.parking.crane.construction.truck
-# https://play.google.com/store/apps/details?id=com.parking.formula.car
-# https://play.google.com/store/apps/details?id=com.parking.emergency.ambulance.parking
-# https://play.google.com/store/apps/details?id=com.parking.hummer.prado
-# https://play.google.com/store/apps/details?id=com.parking.car.game
-# https://play.google.com/store/apps/details?id=com.parking.jeep
-# https://play.google.com/store/apps/details?id=com.parking.limousine.car
-# https://play.google.com/store/apps/details?id=com.parking.cargo.truck
-# https://play.google.com/store/apps/details?id=com.parking.transport.truck
-# https://play.google.com/store/apps/details?id=com.parking.ferrari
-# https://play.google.com/store/apps/details?id=com.parking.tuktuk.auto.rickshaw
-# https://play.google.com/store/apps/details?id=com.parking.tanks
-# https://play.google.com/store/apps/details?id=com.parking.american.police.van.driving
-# https://play.google.com/store/apps/details?id=com.parking.dump.truck
-# https://play.google.com/store/apps/details?id=com.parking.forklift.extreme
-# https://play.google.com/store/apps/details?id=com.parking.taxi.cab
-# https://play.google.com/store/apps/details?id=com.parking.log.transporter.truck
-# https://play.google.com/store/apps/details?id=com.parking.tractor
-# https://play.google.com/store/apps/details?id=com.parking.fire.fighter.truck
-# https://play.google.com/store/apps/details?id=com.parking.bus
-# https://play.google.com/store/apps/details?id=com.parking.euro.truck
-# https://play.google.com/store/apps/details?id=com.parking.quad.bike
-# https://play.google.com/store/apps/details?id=com.parking.police.bus
-# https://play.google.com/store/apps/details?id=com.parking.monster.truck
-# https://play.google.com/store/apps/details?id=com.parking.pickup.truck""".split("\n")
+# play_urls = """https://play.google.com/store/apps/details?id=com.egd.TheBaldEagleEscape
+# https://play.google.com/store/apps/details?id=com.egd.FindTheAngelCrown
+# https://play.google.com/store/apps/details?id=com.egd.HandsomeLittleBoyHouseEscape
+# https://play.google.com/store/apps/details?id=com.egd.FunnyTomatoRescue
+# https://play.google.com/store/apps/details?id=com.egd.ForestGreenTortoiseRescue
+# https://play.google.com/store/apps/details?id=com.egd.GorgeousDalmatianDogHouseRescue
+# https://play.google.com/store/apps/details?id=game.omicron.levelupsquad&ref=apkcombo.com
+# https://play.google.com/store/apps/details?id=com.LinaGames.GlassMan&ref=apkcombo.com
+# https://play.google.com/store/apps/details?id=game.omicron.climbwar&ref=apkcombo.com
+# https://play.google.com/store/apps/details?id=com.acrab.matchitpuzzle&ref=apkcombo.com
+# https://play.google.com/store/apps/details?id=com.toka.town.life.world.avatar.toca.boca.miga.toga.tira.my.world
+# https://play.google.com/store/apps/details?id=com.Avatar.World.City.Life.tira.town.miga.toca.boca.Avitar
+# https://play.google.com/store/apps/details?id=com.toka.town.life.world.avatar.toca.boca.miga.toga.tira.my.world.castle
+# https://play.google.com/store/apps/details?id=com.anime.sakura.school.simulator.life.love.games
+# https://play.google.com/store/apps/details?id=com.stair.run.bridge.race.bridgeway.game
+# https://play.google.com/store/apps/details?id=com.diy.bubble.tea.tapioca.recipe.tasty
+# https://play.google.com/store/apps/details?id=com.antistress.relaxing.games.stress.puppet
+# https://play.google.com/store/apps/details?id=com.adnime.vlinder.princesss.dress.up.fashion.everskies.girl.games
+# https://play.google.com/store/apps/details?id=com.love.nikki.adnime.dress.up.simulator.games
+# https://play.google.com/store/apps/details?id=com.happy.township.farming.free.games
+# https://play.google.com/store/apps/details?id=com.toka.hair.salon.makeup.games
+# https://play.google.com/store/apps/details?id=com.ldle.market.tycoon.shopcooking
+# https://play.google.com/store/apps/details?id=com.pranks.blastet.neaf.epic.game
+# https://play.google.com/store/apps/details?id=com.anime.fashion.princess.girl.dress.up
+# https://play.google.com/store/apps/details?id=com.world.war.mission.strikes.offline.game""".split("\n")
 
 #
 # with ThreadPoolExecutor(max_workers=5) as exe:
@@ -222,7 +186,11 @@ def download_n_save(url, filename, save_path_dir, retry=0):
 #         list(results)
 
 #
+# a = []
 # for i in play_urls:
 #     print(f"downloading {i}")
-#     download_apk_data(i)
+#     link = get_apk_url(i)
+#     print(f"link: {link}")
+#     a.append(link)
 #     print(f"Done downloading {i}")
+# print(a)

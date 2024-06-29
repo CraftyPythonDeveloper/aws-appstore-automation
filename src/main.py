@@ -5,10 +5,9 @@ from pathlib import Path
 import pandas as pd
 from dotenv import load_dotenv
 from helium import kill_browser, set_driver, get_driver
-from seleniumbase import Driver
 from apk_downloader_v2 import download_apk_data
 from utils import (login, create_new_app, create_app_page2, create_app_page3, create_app_page4, create_app_page5,
-                   random_sleep, STATIC_DATA, modify_apk, update_running_status)
+                   random_sleep, STATIC_DATA, modify_apk, update_running_status, get_chrome_driver)
 from logger import logger
 import google.generativeai as genai
 import warnings
@@ -47,7 +46,7 @@ def run(use_local_apk, change_package_name, drm_status, start_from, *args, **kwa
         temp_df_chunks = [user_df.iloc[i:i+5, :] for i in range(0, user_df.shape[0], 5)]
 
         for temp_df in temp_df_chunks:
-            set_driver(Driver(uc=True, incognito=True))
+            set_driver(get_chrome_driver())
             driver = get_driver()
             driver.maximize_window()
             logger.info("Started chrome driver, logging into amazon portal")
@@ -55,7 +54,7 @@ def run(use_local_apk, change_package_name, drm_status, start_from, *args, **kwa
                                  totp=creds_dict["TOTP"])
             if not login_status:
                 logger.info(f"Login Failed for user {creds_dict['email']}")
-                driver.close()
+                driver.quit()
                 break
             logger.info("Login success..")
             for row in temp_df.itertuples():
