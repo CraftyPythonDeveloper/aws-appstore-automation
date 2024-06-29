@@ -73,6 +73,7 @@ def get_static_filepath(static_path):
 
 
 def get_descriptions(model, app_name, app_cat, app_sub_cat, retry=0):
+    required_keys = ["short_description", "long_description", "short_feature", "keywords"]
     logger.debug(f"Generating descriptions for {app_name}")
     if not app_sub_cat:
         app_sub_cat = ""
@@ -81,6 +82,9 @@ def get_descriptions(model, app_name, app_cat, app_sub_cat, retry=0):
     res = model.generate_content(input_prompt)
     try:
         res = json.loads(res.text.replace("\n", ""))
+        if not all([True if i in res.keys() else False for i in required_keys]):
+            logger.info(f"Did not get expected response from LLM, retrying again. retry count {retry} of 3")
+            return get_descriptions(model, app_name, app_cat, app_sub_cat, retry=retry + 1)
     except json.JSONDecodeError:
         if retry < 3:
             logger.debug(f"unable to decode response to json, text response is {res.text}")
