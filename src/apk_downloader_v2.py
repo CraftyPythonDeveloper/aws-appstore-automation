@@ -149,50 +149,50 @@ def download_n_save(url, filename, save_path_dir, retry=0):
 
 
 # for test purpose.
-play_urls = """https://play.google.com/store/apps/details?id=com.egd.TheBaldEagleEscape
-https://play.google.com/store/apps/details?id=com.egd.FindTheAngelCrown
-https://play.google.com/store/apps/details?id=com.egd.HandsomeLittleBoyHouseEscape
-https://play.google.com/store/apps/details?id=com.egd.FunnyTomatoRescue
-https://play.google.com/store/apps/details?id=com.egd.ForestGreenTortoiseRescue
-https://play.google.com/store/apps/details?id=com.egd.GorgeousDalmatianDogHouseRescue
-https://play.google.com/store/apps/details?id=game.omicron.levelupsquad&ref=apkcombo.com
-https://play.google.com/store/apps/details?id=com.LinaGames.GlassMan&ref=apkcombo.com
-https://play.google.com/store/apps/details?id=game.omicron.climbwar&ref=apkcombo.com
-https://play.google.com/store/apps/details?id=com.acrab.matchitpuzzle&ref=apkcombo.com
-https://play.google.com/store/apps/details?id=com.toka.town.life.world.avatar.toca.boca.miga.toga.tira.my.world
-https://play.google.com/store/apps/details?id=com.Avatar.World.City.Life.tira.town.miga.toca.boca.Avitar
-https://play.google.com/store/apps/details?id=com.toka.town.life.world.avatar.toca.boca.miga.toga.tira.my.world.castle
-https://play.google.com/store/apps/details?id=com.anime.sakura.school.simulator.life.love.games
-https://play.google.com/store/apps/details?id=com.stair.run.bridge.race.bridgeway.game
-https://play.google.com/store/apps/details?id=com.diy.bubble.tea.tapioca.recipe.tasty
-https://play.google.com/store/apps/details?id=com.antistress.relaxing.games.stress.puppet
-https://play.google.com/store/apps/details?id=com.adnime.vlinder.princesss.dress.up.fashion.everskies.girl.games
-https://play.google.com/store/apps/details?id=com.love.nikki.adnime.dress.up.simulator.games
-https://play.google.com/store/apps/details?id=com.happy.township.farming.free.games
-https://play.google.com/store/apps/details?id=com.toka.hair.salon.makeup.games
-https://play.google.com/store/apps/details?id=com.ldle.market.tycoon.shopcooking
-https://play.google.com/store/apps/details?id=com.pranks.blastet.neaf.epic.game
-https://play.google.com/store/apps/details?id=com.anime.fashion.princess.girl.dress.up
-https://play.google.com/store/apps/details?id=com.world.war.mission.strikes.offline.game""".split("\n")
-
+# play_urls = """https://play.google.com/store/apps/details?id=com.egd.TheBaldEagleEscape
+# https://play.google.com/store/apps/details?id=com.egd.FindTheAngelCrown
+# https://play.google.com/store/apps/details?id=com.egd.HandsomeLittleBoyHouseEscape
+# https://play.google.com/store/apps/details?id=com.egd.FunnyTomatoRescue
+# https://play.google.com/store/apps/details?id=com.egd.ForestGreenTortoiseRescue
+# https://play.google.com/store/apps/details?id=com.egd.GorgeousDalmatianDogHouseRescue
+# https://play.google.com/store/apps/details?id=game.omicron.levelupsquad&ref=apkcombo.com
+# https://play.google.com/store/apps/details?id=com.LinaGames.GlassMan&ref=apkcombo.com
+# https://play.google.com/store/apps/details?id=game.omicron.climbwar&ref=apkcombo.com
+# https://play.google.com/store/apps/details?id=com.acrab.matchitpuzzle&ref=apkcombo.com
+# https://play.google.com/store/apps/details?id=com.toka.town.life.world.avatar.toca.boca.miga.toga.tira.my.world
+# https://play.google.com/store/apps/details?id=com.Avatar.World.City.Life.tira.town.miga.toca.boca.Avitar
+# https://play.google.com/store/apps/details?id=com.toka.town.life.world.avatar.toca.boca.miga.toga.tira.my.world.castle
+# https://play.google.com/store/apps/details?id=com.anime.sakura.school.simulator.life.love.games
+# https://play.google.com/store/apps/details?id=com.stair.run.bridge.race.bridgeway.game
+# https://play.google.com/store/apps/details?id=com.diy.bubble.tea.tapioca.recipe.tasty
+# https://play.google.com/store/apps/details?id=com.antistress.relaxing.games.stress.puppet
+# https://play.google.com/store/apps/details?id=com.adnime.vlinder.princesss.dress.up.fashion.everskies.girl.games
+# https://play.google.com/store/apps/details?id=com.love.nikki.adnime.dress.up.simulator.games
+# https://play.google.com/store/apps/details?id=com.happy.township.farming.free.games
+# https://play.google.com/store/apps/details?id=com.toka.hair.salon.makeup.games
+# https://play.google.com/store/apps/details?id=com.ldle.market.tycoon.shopcooking
+# https://play.google.com/store/apps/details?id=com.pranks.blastet.neaf.epic.game
+# https://play.google.com/store/apps/details?id=com.anime.fashion.princess.girl.dress.up
+# https://play.google.com/store/apps/details?id=com.world.war.mission.strikes.offline.game""".split("\n")
 #
-# with ThreadPoolExecutor(max_workers=5) as exe:
-#     for i in play_urls[:10]:
-#         data = download_apk_data(i)
-#         if not data:
-#             print("No data for ", i)
-#             continue
+# #
+# # with ThreadPoolExecutor(max_workers=5) as exe:
+# #     for i in play_urls[:10]:
+# #         data = download_apk_data(i)
+# #         if not data:
+# #             print("No data for ", i)
+# #             continue
+# #
+# #         meta = data.pop("meta")
+# #         results = exe.map(download_n_save, data.values(), data.keys(), [meta["package_path"]]*len(data))
+# #         list(results)
 #
-#         meta = data.pop("meta")
-#         results = exe.map(download_n_save, data.values(), data.keys(), [meta["package_path"]]*len(data))
-#         list(results)
-
-#
-a = []
-for i in play_urls:
-    print(f"downloading {i}")
-    link = get_apk_url(i)
-    print(f"link: {link}")
-    a.append(link)
-    print(f"Done downloading {i}")
-print(a)
+# #
+# a = []
+# for i in play_urls:
+#     print(f"downloading {i}")
+#     link = get_apk_url(i)
+#     print(f"link: {link}")
+#     a.append(link)
+#     print(f"Done downloading {i}")
+# print(a)
