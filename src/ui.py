@@ -61,6 +61,7 @@ class MainWindow(QMainWindow):
         elif self.ui.row_start_from.text():
             try:
                 int(self.ui.row_start_from.text())
+                return True
             except ValueError:
                 QMessageBox.critical(self, "Invalid start row", "Please enter an valid integer")
                 return False
