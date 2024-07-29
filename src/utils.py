@@ -281,7 +281,9 @@ def create_app_page2(driver, static_path, game_features, language_support, retry
         random_sleep()
         driver.execute_script(STATIC_DATA["scroll_top_query"])
         random_sleep(min_=6, max_=10)
-        driver.find_element(By.XPATH, "//button[text() = 'Next']").click()
+        next_button = driver.find_element(By.XPATH, "//button[text() = 'Next']")
+        random_sleep()
+        next_button.click()
         logger.debug("Clicked on Next button..")
     except LookupError as e:
         if retry > 3:
