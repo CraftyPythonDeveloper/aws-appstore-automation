@@ -144,8 +144,16 @@ def login(driver, email, password, totp, retry=0):
     # write(email, into='email')
     random_sleep(5, 10)
     logger.debug(f"entering password..")
-    password_elem = driver.find_element(By.ID, "ap_password")
-    start_typing(driver=driver, elem=password_elem, text=password)
+    try:
+        password_elem = driver.find_element(By.ID, "ap_password")
+        start_typing(driver=driver, elem=password_elem, text=password)
+    except NoSuchElementException:
+        logger.info("unable to find password on first page, using login method 2")
+        random_sleep(5, 10)
+        driver.find_element(By.ID, "continue").click()
+        random_sleep(5, 10)
+        password_elem = driver.find_element(By.ID, "ap_password")
+        start_typing(driver=driver, elem=password_elem, text=password)
     # write(password, into='password')
     driver.execute_script(STATIC_DATA["scroll_top_query"])
     logger.debug(f"Clicking signin button to login")
