@@ -23,7 +23,7 @@ def get_play_screenshots(play_url):
     response = requests.get(play_url, headers=headers, verify=False)
     soup = BeautifulSoup(response.text, "html.parser")
     try:
-        name = soup.find("h1", {"itemprop": "name"}).text
+        name = soup.find("span", {"itemprop": "name"}).text
         urls = {"app_name": name}
         icon_img_url = soup.find("img", {"alt": "Icon image"}).get("src").split("=")[0]
         # "https://play-lh.googleusercontent.com/KxeSAjPTKliCErbivNiXrd6cTwfbqUJcbSRPe_IBVK_YmwckfMRS1VIHz-5cgT09yMo=w114-h114-rw"
