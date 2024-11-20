@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 
 from selenium.webdriver import ActionChains
+from selenium.webdriver.support.wait import WebDriverWait
 from seleniumbase import Driver
 from logger import logger
 
@@ -139,9 +140,13 @@ def login(driver, email, password, totp, retry=0):
         return login(driver, email, password, totp, retry=retry+1)
 
     logger.debug(f"entering email {email}")
+    random_sleep(5, 10)
+    window_handles = driver.window_handles
+    driver.switch_to.window(window_handles[0])
     email_elem = driver.find_element(By.ID, "ap_email")
     start_typing(driver=driver, elem=email_elem, text=email)
-    # write(email, into='email')
+    driver.find_element(By.ID, "continue").click()
+
     random_sleep(5, 10)
     logger.debug(f"entering password..")
     try:
@@ -351,8 +356,17 @@ def contains_in(text, lst):
     return False
 
 
-def create_app_page4(driver, model, app_name, app_category, app_sub_category, static_path):
+def create_app_page4(driver, model, app_name, app_category, app_sub_category, static_path, price):
     random_sleep()
+
+    if price:
+        logger.info(f"Entering {price} price for {app_name}")
+        input_radios = driver.find_elements(By.XPATH, "//input[@name='pricing_options']")
+        click(input_radios[1])
+        base_price = driver.find_element(By.XPATH, "//input[@name='base_price']")
+        base_price.send_keys(price)
+        logger.info(f"App price of {price} is set to {base_price}")
+
     data = get_descriptions(model, app_name, app_category, app_sub_category)
     logger.debug(f"Generated data - {data}")
     imgs = get_static_filepath(static_path)

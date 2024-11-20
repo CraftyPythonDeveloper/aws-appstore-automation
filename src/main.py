@@ -59,6 +59,11 @@ def run(use_local_apk, change_package_name, drm_status, start_from, *args, **kwa
             logger.info("Login success..")
             for row in temp_df.itertuples():
                 try:
+                    price = float(row.price)
+                except ValueError:
+                    price = None
+
+                try:
                     if use_local_apk:
                         package_dir, app_name = download_apk_data(row.google_play_apk_url, download_apk=False)
                         apk_name = row.base_apkname
@@ -109,7 +114,9 @@ def run(use_local_apk, change_package_name, drm_status, start_from, *args, **kwa
                     create_app_page3(driver)
                     logger.info(f"Processing step 4")
                     random_sleep(min_=4, max_=8)
-                    create_app_page4(driver, model, app_name, row.app_category, row.app_sub_category, package_dir)
+                    create_app_page4(
+                        driver, model, app_name, row.app_category, row.app_sub_category, package_dir, price
+                    )
                     logger.info(f"Processing step 5")
                     random_sleep(min_=4, max_=8)
                     create_app_page5(driver)

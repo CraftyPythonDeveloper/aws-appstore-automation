@@ -1,15 +1,15 @@
 # python=3.10
 helium==5.0.0
-selenium==4.16.0
+selenium==4.21.0
 pandas==2.2.0
 pyotp==2.9.0
 python-dotenv==1.0.0
 google-generativeai==0.3.2
 amazoncaptcha==0.5.11
-pillow<9.6.0
+pillow==10.3.0
 bs4==0.0.2
 openpyxl==3.1.2
-requests==2.30.0
+requests==2.31.0
 pyqt5==5.15.9
-seleniumbase
+seleniumbase==4.27.5
 # java sdk requirements https://download.oracle.com/java/22/latest/jdk-22_windows-x64_bin.exe
