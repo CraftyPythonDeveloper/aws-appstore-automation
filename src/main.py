@@ -58,8 +58,10 @@ def run(use_local_apk, change_package_name, drm_status, start_from, *args, **kwa
                 break
             logger.info("Login success..")
             for row in temp_df.itertuples():
+                price = None
                 try:
-                    price = float(row.price)
+                    if not str(row.price) == "nan":
+                        price = float(row.price)
                 except ValueError:
                     price = None
 
