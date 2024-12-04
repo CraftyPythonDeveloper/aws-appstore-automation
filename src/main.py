@@ -59,11 +59,11 @@ def run(use_local_apk, change_package_name, drm_status, start_from, *args, **kwa
             logger.info("Login success..")
             for row in temp_df.itertuples():
                 price = None
-                try:
-                    if not str(row.price) == "nan":
+                if not str(row.price) == "nan":
+                    try:
                         price = float(row.price)
-                except ValueError:
-                    price = None
+                    except ValueError:
+                        logger.error(f"Unable to convert the price to float. the input price is {row.price} and {row}")
 
                 try:
                     if use_local_apk:
