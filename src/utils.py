@@ -141,8 +141,8 @@ def login(driver, email, password, totp, retry=0):
 
     logger.debug(f"entering email {email}")
     random_sleep(5, 10)
-    window_handles = driver.window_handles
-    driver.switch_to.window(window_handles[0])
+    # window_handles = driver.window_handles
+    # driver.switch_to.window(window_handles[0])
     email_elem = driver.find_element(By.ID, "ap_email")
     start_typing(driver=driver, elem=email_elem, text=email)
     driver.find_element(By.ID, "continue").click()
