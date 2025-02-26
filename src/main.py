@@ -34,7 +34,7 @@ def run(use_local_apk, change_package_name, drm_status, start_from, *args, **kwa
         config_df = config_df[start_from:]
 
     genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
-    model = genai.GenerativeModel('gemini-pro')
+    model = genai.GenerativeModel('gemini-2.0-flash')
 
     unique_usernames = config_df.username.unique()
 
