@@ -30,16 +30,23 @@ STATIC_DATA = {
                   "=en_US",
 
 }
-prompt = """You are an android app description suggestion agent and your job is to generate short description, 
-            long description and short feature description of android app by using below provided details and make sure
-             to use response format as reference to provide response in the same key value pair, the response 
-             format needs to be strictly followed, if required regenerate the response but make sure that the dictionary 
-             keys are exact as they are in response. 
-            ### details App Name: {app_name} App Categorie: {app_cat} App Sub Categorie: {app_sub_cat}
+prompt = """
+You are an Android app description suggestion agent. Your task is to generate a short description, a long description, and a short feature description for an Android app using the details provided below. Follow the JSON response format exactly as given. The output must be a valid JSON object with keys matching those in the response format exactly.
 
-            ### Response format
-            {response_format}
-            """
+Requirements:
+- Use only the provided JSON format without any additional text, markdown formatting, or extra keys.
+- Do not include any code block markers (like ```json).
+- Output only the JSON object so it can be directly used as a Python dictionary.
+
+### Details
+App Name: {app_name}
+App Category: {app_cat}
+App Sub Category: {app_sub_cat}
+
+### Response Format
+{response_format}
+"""
+
 
 response_format = '{"short_description": "this is short description", "long_description": "this is long description", ' \
                   '"short_feature": "this is short feature description", "keywords": "keyword1 keyword2 keyword3 ' \
@@ -82,7 +89,7 @@ def get_descriptions(model, app_name, app_cat, app_sub_cat, retry=0):
                                  response_format=response_format)
     res = model.generate_content(input_prompt)
     try:
-        res = json.loads(res.text.replace("\n", ""))
+        res = json.loads(res.text.strip("```").strip("json").replace("\n", ""))
         if not all([True if i in res.keys() else False for i in required_keys]):
             logger.info(f"Did not get expected response from LLM, retrying again. retry count {retry} of 3")
             return get_descriptions(model, app_name, app_cat, app_sub_cat, retry=retry + 1)
