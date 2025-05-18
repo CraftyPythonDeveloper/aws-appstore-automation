@@ -48,9 +48,7 @@ App Sub Category: {app_sub_cat}
 """
 
 
-response_format = '{"short_description": "this is short description", "long_description": "this is long description", ' \
-                  '"short_feature": "this is short feature description", "keywords": "keyword1 keyword2 keyword3 ' \
-                  'keyword4"}'
+response_format = '{"short_description": "this is short description", "long_description": "this is long description", "short_feature": "this is short feature description", "keywords": "keyword1 keyword2 keyword3 keyword4"}'
 
 
 def get_chrome_driver(headless=False):
@@ -323,6 +321,16 @@ def create_app_page3(driver, retry=0):
     try:
         logger.debug("filling details to page 3")
         random_sleep()
+        # deselect amazon fire tv devices
+        driver.find_element(By.XPATH, '//button[contains(text(), "Edit supported devices")]').click()
+        random_sleep()
+        driver.find_element(By.XPATH, '//span[contains(text(), "Amazon Fire TV")]').click()
+        random_sleep()
+        [i for i in driver.find_elements(By.TAG_NAME, 'button') if i.text == "Deselect all"][0].click()
+        random_sleep()
+        [i for i in driver.find_elements(By.TAG_NAME, 'button') if i.text == "Save"][0].click()
+        random_sleep(min_=12, max_=15)
+
         # driver.find_element(By.XPATH, '//*[@id="target-audience-radio-group"]//input[@value="all"]').click()  # all age group
         driver.find_element(By.XPATH, "//input[@id='16-17 years of age']").click()     # check 16-17 age group
         random_sleep()
